@@ -10,8 +10,6 @@ using System.Text;
 
 namespace JesseStiller.PhLayerTool {
     public class PreferencesPane {
-        internal static Settings settings;
-
         private static string path;
         private static StringBuilder sb = new StringBuilder(16);
         private const int maxSearchLineCount = 15;
@@ -21,8 +19,6 @@ namespace JesseStiller.PhLayerTool {
         };
 
         internal static void InitializeSettings() {
-            settings = new Settings();
-
             // Find the directory of any PhLayer script.
             string mainDirectory = GetMainDirectory();
             if(mainDirectory == null) {
@@ -104,7 +100,6 @@ namespace JesseStiller.PhLayerTool {
             if(lastSlashIndex == -1) return filePath;
 
             for(int c = lastSlashIndex; c < filePath.Length; c++) {
-                //chars.Add(filePath[c]);
                 tempString += filePath[c];
             }
             return tempString;
