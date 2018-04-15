@@ -1,21 +1,9 @@
-﻿//internal class SavedProperty {
-//    private const string keyPrefix = "JesseStiller.PhLayer/";
-
-//    internal object defaultValue;
-//    protected readonly string fullKey;
-
-//    protected SavedProperty(string name) {
-//        fullKey = keyPrefix + name;
-//    }
-//}
-
-
-using System;
+﻿using System;
 using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 
-public class SavedProperty<T> where T : struct {
+public class SavedProperty<T> {
     private const string keyPrefix = "JesseStiller.PhLayer/";
     private static readonly Type boolT = typeof(bool);
     private static readonly Type intT = typeof(int);
@@ -52,14 +40,16 @@ public class SavedProperty<T> where T : struct {
 
     public SavedProperty(string name, T defaultValue) {
         this.defaultValue = defaultValue;
-        fullKey = keyPrefix + name;
+        fullKey = keyPrefix + name + ":" + Application.productName;
 
         Type type = typeof(T);
         if(type == boolT) {
             value = ChangeType<T>(EditorPrefs.GetBool(fullKey));
         } else if(type == floatT) {
             value = ChangeType<T>(EditorPrefs.GetFloat(fullKey));
-        } else if(type.IsEnum || type == intT) {
+        } else if(type.IsEnum) {
+            value = (T)(object)(EditorPrefs.GetInt(fullKey));
+        } else if(type == intT) {
             value = ChangeType<T>(EditorPrefs.GetInt(fullKey));
         } else if(type == stringT) {
             value = ChangeType<T>(EditorPrefs.GetString(fullKey));

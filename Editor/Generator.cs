@@ -27,15 +27,11 @@ namespace JesseStiller.PhLayerTool {
         
         [MenuItem("Jesse Stiller/Update Layer Class")]
         internal static void Generate() {
-            if(PreferencesPane.settings == null) {
-                PreferencesPane.InitializeSettings();
-            }
-
             StringBuilder sb = new StringBuilder();
 
             sb.AppendLine("// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension." + Environment.NewLine);
 
-            sb.AppendLine($"public static class {generatedClassName} {{");
+            sb.AppendLine("public static class " + generatedClassName + " {");
             
             for(int i = 0; i < 32; i++) {
                 string layerName = UnityEngine.LayerMask.LayerToName(i);
@@ -47,7 +43,7 @@ namespace JesseStiller.PhLayerTool {
                     layerName = "layer" + layerName;
                 }
                 
-                switch(PreferencesPane.settings.casing) {
+                switch(Settings.casing.Value) {
                     case Casing.Camel:
                         layerName = char.ToLowerInvariant(layerName[0]) + layerName.Substring(1);
                         break;
