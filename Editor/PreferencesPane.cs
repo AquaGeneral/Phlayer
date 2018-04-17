@@ -11,7 +11,7 @@ namespace JesseStiller.PhLayerTool {
 
         private static string path;
         private static StringBuilder sb = new StringBuilder(32);
-        private const int maxSearchLineCount = 15;
+        private const int maxSearchLineCount = 12;
 
         private static readonly string[] searchFileNames = {
             "Generator.cs", "Settings.cs", "Casing.cs", "SavedProperty.cs"
@@ -41,28 +41,23 @@ namespace JesseStiller.PhLayerTool {
             * 5) Go into the file to make sure it's one of ours
             */
 
-            foreach(string filePath in Directory.EnumerateFiles(Application.dataPath, "*.cs", SearchOption.AllDirectories)) {
-                bool validFileName = false;
-                for(int fn = 0; fn < searchFileNames.Length; fn++) {
-                    if(filePath.EndsWith(searchFileNames[fn], StringComparison.Ordinal)) {
-                        validFileName = true;
-                        break;
-                    }
-                }
-                if(validFileName == false) continue;
+            foreach(string phLayerFolderPath in Directory.EnumerateDirectories(Application.dataPath, "*PhLayer", SearchOption.AllDirectories)) {
+                foreach(string filePath in Directory.EnumerateFiles(phLayerFolderPath, "*.cs", SearchOption.AllDirectories)) {
+                    for(int fn = 0; fn < searchFileNames.Length; fn++) {
+                        if(filePath.EndsWith(searchFileNames[fn], StringComparison.Ordinal)) {
+                            int lineCount;
+                            using(StreamReader sr = new StreamReader(filePath)) {
+                                lineCount = 0;
+                                string line;
+                                while((line = sr.ReadLine()) != null) {
+                                    if(line.StartsWith("namespace JesseStiller.PhLayerTool {", StringComparison.Ordinal)) {
+                                        return filePath;
+                                    }
 
-                if(IsPhLayerPath(filePath) == false) continue;
-
-                int lineCount;
-                using(StreamReader sr = new StreamReader(filePath)) {
-                    lineCount = 0;
-                    string line;
-                    while((line = sr.ReadLine()) != null) {
-                        if(line.StartsWith("namespace JesseStiller.PhLayerTool {", StringComparison.Ordinal)) {
-                            return filePath;
+                                    if(lineCount++ > maxSearchLineCount) break;
+                                }
+                            }
                         }
-
-                        if(lineCount++ > maxSearchLineCount) break;
                     }
                 }
             }
