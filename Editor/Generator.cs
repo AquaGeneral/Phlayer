@@ -27,13 +27,16 @@ namespace JesseStiller.PhLayerTool {
         
         [MenuItem("Jesse Stiller/Update Layer Class")]
         internal static void Generate() {
+            PhLayer.InitializeSettings();
+
+            // TODO: Is a text writer faster?
             StringBuilder sb = new StringBuilder();
 
             sb.AppendLine("// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension." + Environment.NewLine);
 
             sb.AppendLine("public static class " + generatedClassName + " {");
             
-            for(int i = 0; i < 32; i++) {
+            for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
                 string layerName = UnityEngine.LayerMask.LayerToName(i);
                 if(string.IsNullOrEmpty(layerName)) continue;
 
@@ -43,11 +46,12 @@ namespace JesseStiller.PhLayerTool {
                     layerName = "layer" + layerName;
                 }
                 
-                switch(Settings.casing.Value) {
+                switch(PhLayer.settings.casing) {
                     case Casing.Camel:
                         layerName = char.ToLowerInvariant(layerName[0]) + layerName.Substring(1);
                         break;
                     case Casing.Pascal:
+                        throw new NotImplementedException();
                         break;
                     case Casing.Caps:
                         layerName = layerName.ToUpperInvariant();
@@ -61,9 +65,9 @@ namespace JesseStiller.PhLayerTool {
 
             sb.AppendLine("}");
 
-            File.WriteAllText(Application.dataPath + $"/Scripts/{generatedClassName}.cs", sb.ToString());
+            File.WriteAllText(PhLayer.settings.outputPath, sb.ToString());
 
-            AssetDatabase.ImportAsset($"Assets/Scripts/{generatedClassName}.cs");
+            AssetDatabase.ImportAsset("Assets/Scripts/" + generatedClassName + ".cs");
         }
     }
 }
