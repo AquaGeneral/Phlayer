@@ -1,9 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-namespace JesseStiller.PhLayerTool {
-    internal enum ErrorState : byte {
+﻿namespace JesseStiller.PhLayerTool {
+    internal enum SettingsError : byte {
         None,
         NoDirectory,
         NoValidFile

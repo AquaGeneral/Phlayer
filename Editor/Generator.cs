@@ -15,7 +15,7 @@ namespace JesseStiller.PhLayerTool {
     //}
 
     public class Generator : AssetPostprocessor {
-        private const string generatedClassName = "Layers";
+        private static string header = "// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension.\n";
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
             foreach(string str in importedAssets) {
@@ -29,12 +29,26 @@ namespace JesseStiller.PhLayerTool {
         internal static void Generate() {
             PhLayer.InitializeSettings();
 
+            string localFilePath = Path.Combine(PhLayer.settings.outputPath, PhLayer.settings.className + ".g.cs");
+            string absoluteFilePath = GetAbsolutePathFromLocalPath(localFilePath);
+
+            // Make sure that we are writing to one of our own files if already present, and not something created by a anyone/anything else.
+            if(File.Exists(absoluteFilePath)) {
+                using(StreamReader sr = new StreamReader(absoluteFilePath)) {
+                    if(sr.ReadLine().StartsWith(header, StringComparison.Ordinal) == false) {
+                        bool overwriteAnyway = EditorUtility.DisplayDialog("PhLayer", "PhLayer was going to update the generated layers physics layers class, but it is going to overwrite a non-matching file at:\n" + 
+                            absoluteFilePath, "Overwrite anyway", "Don't overwrite");
+                        if(overwriteAnyway == false) return;
+                    }
+                }
+            }
+
             // TODO: Is a text writer faster?
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine("// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension." + Environment.NewLine);
+            sb.AppendLine(header);
 
-            sb.AppendLine("public static class " + generatedClassName + " {");
+            sb.AppendLine("public static class " + PhLayer.settings.className + " {");
             
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
                 string layerName = UnityEngine.LayerMask.LayerToName(i);
@@ -65,9 +79,19 @@ namespace JesseStiller.PhLayerTool {
 
             sb.AppendLine("}");
 
-            File.WriteAllText(PhLayer.settings.outputPath, sb.ToString());
+            File.WriteAllText(absoluteFilePath, sb.ToString());
 
-            AssetDatabase.ImportAsset("Assets/Scripts/" + generatedClassName + ".cs");
+            AssetDatabase.ImportAsset(localFilePath);
+        }
+
+        /// <summary>
+        /// Get the absolute path from a local path.
+        /// </summary>
+        /// <param name="localPath">The path contained within the "Assets" direction. Eg: "Models/Model.fbx"</param>
+        /// <example>Passing "Models/Model.fbx" will return "C:/Users/John/MyProject/Assets/Models/Model.fbx"</example>
+        /// <returns>Returns the absolute/full system path from the local "Assets" inclusive path.</returns>
+        internal static string GetAbsolutePathFromLocalPath(string localPath) {
+            return Application.dataPath.Remove(Application.dataPath.Length - 6, 6) + localPath;
         }
     }
 }

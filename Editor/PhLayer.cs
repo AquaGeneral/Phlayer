@@ -10,13 +10,13 @@ namespace JesseStiller.PhLayerTool {
 
         public static string mainDirectory;
         public static string settingsPath;
-        public static ErrorState errorState;
+        public static SettingsError errorState;
         public static Settings settings;
         
         internal static void InitializeSettings() {
             if(string.IsNullOrEmpty(mainDirectory) == false) return;
 
-            errorState = ErrorState.None;
+            errorState = SettingsError.None;
 
             int lineCount;
             int directoryCount = 0;
@@ -41,9 +41,9 @@ namespace JesseStiller.PhLayerTool {
             }
 
             if(directoryCount == 0) {
-                errorState = ErrorState.NoDirectory;
+                errorState = SettingsError.NoDirectory;
             } else {
-                errorState = ErrorState.NoValidFile;
+                errorState = SettingsError.NoValidFile;
             }
         }
 
