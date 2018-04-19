@@ -1,21 +1,31 @@
-﻿using System;
+﻿using Microsoft.CSharp;
+using System;
 using System.IO;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
 
+/**
+* TODO: 
+* - Validate non-typical characters such as the copyright symbol when it comes to naming them in the class.
+*/
+
 namespace JesseStiller.PhLayerTool {
-    // Call generate each time Unity is opened
-    //[InitializeOnLoad]
-    //public static class Startup {
-    //    static Startup() {
-    //        PhLayerGenerator.Generate();
-    //        Debug.Log("Generate");
-    //    }
-    //}
+    //Call generate each time Unity is opened
+    [InitializeOnLoad]
+    public static class Startup {
+        static Startup() {
+            if(EditorApplication.isPlayingOrWillChangePlaymode) return;
+            //PhLayerGenerator.Generate();
+            Debug.Log("Startup");
+        }
+    }
 
     public class Generator : AssetPostprocessor {
         private static string header = "// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension.\n";
+        // TODO: Is a text writer faster?
+        private static StringBuilder sb = new StringBuilder();
+        private static byte indentation;
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
             foreach(string str in importedAssets) {
@@ -24,12 +34,14 @@ namespace JesseStiller.PhLayerTool {
                 }
             }
         }
-        
+
         [MenuItem("Jesse Stiller/Update Layer Class")]
         internal static void Generate() {
             PhLayer.InitializeSettings();
 
-            string localFilePath = Path.Combine(PhLayer.settings.outputPath, PhLayer.settings.className + ".g.cs");
+            string className = string.IsNullOrEmpty(PhLayer.settings.className) ? "Layers" : PhLayer.settings.className;
+            string outputDirectory = string.IsNullOrEmpty(PhLayer.settings.outputDirectory) ? "Assets\\" : PhLayer.settings.outputDirectory;
+            string localFilePath = Path.Combine(outputDirectory, className + ".g.cs");
             string absoluteFilePath = GetAbsolutePathFromLocalPath(localFilePath);
 
             // Make sure that we are writing to one of our own files if already present, and not something created by a anyone/anything else.
@@ -43,12 +55,21 @@ namespace JesseStiller.PhLayerTool {
                 }
             }
 
-            // TODO: Is a text writer faster?
-            StringBuilder sb = new StringBuilder();
+            // Reset state
+            sb.Clear();
+            indentation = 0;
+            
+            AppendLine(header);
 
-            sb.AppendLine(header);
+            // Namespace
+            if(string.IsNullOrEmpty(PhLayer.settings.classNamespace) == false) {
+                AppendLine("namespace " + PhLayer.settings.classNamespace + " {");
+                Indent();
+            }
 
-            sb.AppendLine("public static class " + PhLayer.settings.className + " {");
+            // Class declaration
+            AppendLine("public static class " + PhLayer.settings.className + " {");
+            Indent();
             
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
                 string layerName = UnityEngine.LayerMask.LayerToName(i);
@@ -57,7 +78,7 @@ namespace JesseStiller.PhLayerTool {
                 layerName = layerName.Replace(" ", "");
 
                 if(char.IsDigit(layerName[0])) {
-                    layerName = "layer" + layerName;
+                    layerName = "_" + layerName;
                 }
                 
                 switch(PhLayer.settings.casing) {
@@ -67,21 +88,39 @@ namespace JesseStiller.PhLayerTool {
                     case Casing.Pascal:
                         throw new NotImplementedException();
                         break;
-                    case Casing.Caps:
+                    case Casing.CapsLock:
                         layerName = layerName.ToUpperInvariant();
                         break;
                 }
 
-                if(layerName == "default") layerName = "@default";
-
-                sb.AppendLine(string.Format("\tpublic const int {0} = {1};", layerName, i));
+                CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+                layerName = codeProvider.CreateEscapedIdentifier(layerName);
+                
+                AppendLine(string.Format("\tpublic const int {0} = {1};", layerName, i));
             }
 
-            sb.AppendLine("}");
+            // Write all ending curly brakets
+            while(--indentation >= 0) {
+                AppendLine("}");
+            }
 
             File.WriteAllText(absoluteFilePath, sb.ToString());
 
             AssetDatabase.ImportAsset(localFilePath);
+        }
+
+        private static void AppendLine(string s) {
+            for(int i = 0; i < indentation; i++) sb.Append('\t');
+            sb.AppendLine(s);
+        }
+
+        private static void Indent() {
+            indentation++;
+        }
+
+        private static void Unindent() {
+            indentation--;
+            Debug.Assert(indentation >= 0);
         }
 
         /// <summary>

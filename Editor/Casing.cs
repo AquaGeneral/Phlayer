@@ -6,6 +6,6 @@ namespace JesseStiller.PhLayerTool {
     public enum Casing {
         Camel,
         Pascal,
-        Caps,
+        CapsLock,
     }
 }

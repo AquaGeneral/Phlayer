@@ -5,7 +5,7 @@ namespace JesseStiller.PhLayerTool {
     internal class Settings {
         public Casing casing;
         public bool skipBuiltinLayers;
-        public string outputPath;
+        public string outputDirectory;
         public string classNamespace = "";
         public string className = "Layers";
     }

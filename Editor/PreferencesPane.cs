@@ -1,9 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using UnityEditor;
 using UnityEngine;
+
+/**
+* TODO:
+* - Validate class namespace,
+* - Validate class name
+*/
 
 namespace JesseStiller.PhLayerTool {
     public class PreferencesPane {
@@ -44,41 +47,59 @@ namespace JesseStiller.PhLayerTool {
             EditorGUIUtility.labelWidth = 130f;
 
             EditorGUI.BeginChangeCheck();
-            PhLayer.settings.className = TextFieldWithDefault("Class Name", PhLayer.settings.className, "Layers");
+            PhLayer.settings.className = TextFieldWithDefault("Class Name*", PhLayer.settings.className, "Layers");
             PhLayer.settings.classNamespace = EditorGUILayout.TextField("Class Namespace", PhLayer.settings.classNamespace);
             PhLayer.settings.casing = (Casing)EditorGUILayout.EnumPopup("Field Casing", PhLayer.settings.casing);
             PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
             
             EditorGUILayout.BeginHorizontal();
-            PhLayer.settings.outputPath = TextAreaWithDefault("Output Path", PhLayer.settings.outputPath, GetLocalPathFromAbsolutePath(PhLayer.mainDirectory));
-            if(GUILayout.Button("Browse…", GUILayout.Width(70f))) {
-                string chosenPath = EditorUtility.SaveFilePanelInProject("PhLayer", "Settings.json", "json", "");
-                if(string.IsNullOrEmpty(chosenPath) == false) PhLayer.settings.outputPath = chosenPath;
+            PhLayer.settings.outputDirectory = TextAreaWithDefault("Output Directory*", PhLayer.settings.outputDirectory, "Assets\\");
+            if(GUILayout.Button("Browse…", GUILayout.Width(70f), GUILayout.Height(22f))) {
+                string chosenPath = EditorUtility.OpenFolderPanel("PhLayer", GetOutputDirectory(), string.Empty);
+                if(string.IsNullOrEmpty(chosenPath) == false) PhLayer.settings.outputDirectory = GetLocalPathFromAbsolutePath(chosenPath);
             }
             EditorGUILayout.EndHorizontal();
             if(EditorGUI.EndChangeCheck()) {
                 PhLayer.SaveSettings();
             }
 
-            if(GUILayout.Button("Force Generate")) {
+            using(new EditorGUILayout.HorizontalScope()) {
+                GUILayout.FlexibleSpace();
+                EditorStyles.centeredGreyMiniLabel.richText = true;
+                GUILayout.Label("* Values in <i>italics</i> represent default values", EditorStyles.centeredGreyMiniLabel);
+                EditorStyles.centeredGreyMiniLabel.richText = false;
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            if(GUILayout.Button("Force Generate", GUILayout.Width(140f), GUILayout.Height(22f))) {
                 Generator.Generate();
             }
 
-            if(GUILayout.Button("Restore Defaults")) {
+            if(GUILayout.Button("Restore Defaults", GUILayout.Width(140f), GUILayout.Height(22f))) {
 
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private static string GetOutputDirectory() {
+            if(string.IsNullOrEmpty(PhLayer.settings.outputDirectory)) {
+                return GetLocalPathFromAbsolutePath(PhLayer.mainDirectory);
+            } else {
+                return PhLayer.settings.outputDirectory;
             }
         }
 
-        
         private static string TextFieldWithDefault(string label, string value, string defaultValue) {
             string newValue = EditorGUILayout.TextField(label, value);
+
             Rect rect = GUILayoutUtility.GetLastRect();
             if(string.IsNullOrEmpty(value)) {
                 if(Event.current.type == EventType.Repaint) {
                     Styles.greyItalicLabel.Draw(new Rect(rect.x + EditorGUIUtility.labelWidth, rect.y, 200f, rect.height), defaultValue, false, false, false, false);
                 }
-                
             }
+
             return newValue;
         }
 
