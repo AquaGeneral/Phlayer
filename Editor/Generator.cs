@@ -22,9 +22,11 @@ namespace JesseStiller.PhLayerTool {
     }
 
     public class Generator : AssetPostprocessor {
-        private static string header = "// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension.\n";
+        private const string windowsLineEnding = "\r\n";
+        private const string unixLineEnding = "\n";
+        private static string header = "// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension.";
         // TODO: Is a text writer faster?
-        private static StringBuilder sb = new StringBuilder();
+        private static StringBuilder sb = new StringBuilder(512);
         private static byte indentation;
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
@@ -63,13 +65,11 @@ namespace JesseStiller.PhLayerTool {
 
             // Namespace
             if(string.IsNullOrEmpty(PhLayer.settings.classNamespace) == false) {
-                AppendLine("namespace " + PhLayer.settings.classNamespace + " {");
-                Indent();
+                AppendLineWithCurlyBracket("namespace " + PhLayer.settings.classNamespace);
             }
 
             // Class declaration
-            AppendLine("public static class " + PhLayer.settings.className + " {");
-            Indent();
+            AppendLineWithCurlyBracket("public static class " + PhLayer.settings.className);
             
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
                 string layerName = UnityEngine.LayerMask.LayerToName(i);
@@ -94,13 +94,13 @@ namespace JesseStiller.PhLayerTool {
                 }
 
                 CSharpCodeProvider codeProvider = new CSharpCodeProvider();
-                layerName = codeProvider.CreateEscapedIdentifier(layerName);
+                layerName = codeProvider.CreateValidIdentifier(layerName);
                 
-                AppendLine(string.Format("\tpublic const int {0} = {1};", layerName, i));
+                AppendLine(string.Format("public const int {0} = {1};", layerName, i));
             }
 
             // Write all ending curly brakets
-            while(--indentation >= 0) {
+            while(indentation-- > 0) {
                 AppendLine("}");
             }
 
@@ -109,9 +109,32 @@ namespace JesseStiller.PhLayerTool {
             AssetDatabase.ImportAsset(localFilePath);
         }
 
-        private static void AppendLine(string s) {
+        private static void AppendLineWithCurlyBracket(string v) {
+            Append(v);
+            if(PhLayer.settings.curlyBracketPreference == CurlyBracketPreference.NewLine) {
+                AppendLine("");
+                AppendLine("{");
+            } else {
+                sb.Append(" {");
+                AppendLine("");
+            }
+
+            Indent();
+        }
+
+        private static void Append(string s) {
+            Debug.Assert(indentation < 10);
             for(int i = 0; i < indentation; i++) sb.Append('\t');
-            sb.AppendLine(s);
+            sb.Append(s);
+        }
+
+        private static void AppendLine(string s) {
+            Append(s);
+            if(PhLayer.settings.lineEndings == LineEndings.Windows) {
+                sb.Append(windowsLineEnding);
+            } else {
+                sb.Append(unixLineEnding);
+            }
         }
 
         private static void Indent() {

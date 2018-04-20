@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Globalization;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -35,7 +37,7 @@ namespace JesseStiller.PhLayerTool {
 
             switch(PhLayer.errorState) {
                 case SettingsError.NoDirectory:
-                    EditorGUILayout.HelpBox("There is no valid directory named PhLayer - do not rename the directory of PhLayer.", MessageType.Error);
+                    EditorGUILayout.HelpBox("There is no valid directory named PhLayer - do not rename the directory that PhLayer is contained within.", MessageType.Error);
                     break;
                 case SettingsError.NoValidFile:
                     EditorGUILayout.HelpBox("PhLayer somehow couldn't find the main location of its files. Make sure you did not modify PhLayer's code, nor directory names.", MessageType.Error);
@@ -48,10 +50,13 @@ namespace JesseStiller.PhLayerTool {
 
             EditorGUI.BeginChangeCheck();
             PhLayer.settings.className = TextFieldWithDefault("Class Name*", PhLayer.settings.className, "Layers");
+            PhLayer.settings.className = ValidatedIdentifier(PhLayer.settings.className);
             PhLayer.settings.classNamespace = EditorGUILayout.TextField("Class Namespace", PhLayer.settings.classNamespace);
             PhLayer.settings.casing = (Casing)EditorGUILayout.EnumPopup("Field Casing", PhLayer.settings.casing);
             PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
-            
+            PhLayer.settings.lineEndings = (LineEndings)EditorGUILayout.EnumPopup("Line Endings", PhLayer.settings.lineEndings);
+            PhLayer.settings.curlyBracketPreference = (CurlyBracketPreference)EditorGUILayout.EnumPopup("Curly Bracket Opening", PhLayer.settings.curlyBracketPreference);
+
             EditorGUILayout.BeginHorizontal();
             PhLayer.settings.outputDirectory = TextAreaWithDefault("Output Directory*", PhLayer.settings.outputDirectory, "Assets\\");
             if(GUILayout.Button("Browse…", GUILayout.Width(70f), GUILayout.Height(22f))) {
@@ -82,6 +87,30 @@ namespace JesseStiller.PhLayerTool {
             EditorGUILayout.EndHorizontal();
         }
 
+        private static string ValidatedIdentifier(string s) {
+            // Letter upercase  u0041 to u1e921
+            // Letter lowercase u0061 to u1e943
+
+            StringBuilder sb = new StringBuilder();
+
+            for(int c = 0; c < s.Length; c++) {
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(s[c]);
+
+                if(uc == UnicodeCategory.LowercaseLetter || uc == UnicodeCategory.UppercaseLetter) {
+                    sb.Append(s[c]);
+                } else {
+                    sb.Append('_');
+                }
+
+                //if(s[c] >= '\u0041' && s[c] <= '\uFF3A') {
+                //    sb.Append(s[c]);
+                //} else {
+                //    sb.Append('_');
+                //}
+            }
+            return sb.ToString();
+        }
+
         private static string GetOutputDirectory() {
             if(string.IsNullOrEmpty(PhLayer.settings.outputDirectory)) {
                 return GetLocalPathFromAbsolutePath(PhLayer.mainDirectory);
@@ -92,6 +121,9 @@ namespace JesseStiller.PhLayerTool {
 
         private static string TextFieldWithDefault(string label, string value, string defaultValue) {
             string newValue = EditorGUILayout.TextField(label, value);
+
+            //int controlId = GUIUtility.GetControlID("TextField".GetHashCode(), rect);
+            //Event controlEvent = Event.current.GetTypeForControl(controlId);
 
             Rect rect = GUILayoutUtility.GetLastRect();
             if(string.IsNullOrEmpty(value)) {

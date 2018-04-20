@@ -8,5 +8,8 @@ namespace JesseStiller.PhLayerTool {
         public string outputDirectory;
         public string classNamespace = "";
         public string className = "Layers";
+        // Yes the following could just be bools but listing the options explicitly in the UI makes it more user-friendly.
+        public CurlyBracketPreference curlyBracketPreference = CurlyBracketPreference.NewLine;
+        public LineEndings lineEndings = LineEndings.Windows; 
     }
 }
