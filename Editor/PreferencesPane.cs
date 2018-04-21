@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -12,7 +13,12 @@ using UnityEngine;
 
 namespace JesseStiller.PhLayerTool {
     public class PreferencesPane {
+        private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly FieldInfo recycledEditorField = typeof(EditorGUI).GetField("s_RecycledEditor", BindingFlags.NonPublic | BindingFlags.Static);
+
         private static readonly int textFieldWithDefaultId = "PhLayer.TextFieldWithDefault".GetHashCode();
+
+        private static readonly StringBuilder sb = new StringBuilder();
 
         private static class Styles {
             internal static GUIStyle greyItalicLabel, wordWrappedTextArea;
@@ -49,8 +55,8 @@ namespace JesseStiller.PhLayerTool {
             EditorGUIUtility.labelWidth = 130f;
 
             EditorGUI.BeginChangeCheck();
-            PhLayer.settings.className = TextFieldWithDefault("Class Name*", PhLayer.settings.className, "Layers");
-            PhLayer.settings.className = ValidatedIdentifier(PhLayer.settings.className);
+            //PhLayer.settings.className = TextFieldWithDefault("Class Name*", PhLayer.settings.className, "Layers");
+            PhLayer.settings.className = ValidatedTextField("Class Name", PhLayer.settings.className, "Layers");
             PhLayer.settings.classNamespace = EditorGUILayout.TextField("Class Namespace", PhLayer.settings.classNamespace);
             PhLayer.settings.casing = (Casing)EditorGUILayout.EnumPopup("Field Casing", PhLayer.settings.casing);
             PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
@@ -87,26 +93,22 @@ namespace JesseStiller.PhLayerTool {
             EditorGUILayout.EndHorizontal();
         }
 
-        private static string ValidatedIdentifier(string s) {
-            // Letter upercase  u0041 to u1e921
-            // Letter lowercase u0061 to u1e943
+        private static bool IsCharacterValidIdentifier(char c) {
+            UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
+            return (uc >= UnicodeCategory.UppercaseLetter && uc <= UnicodeCategory.SpacingCombiningMark) || uc == UnicodeCategory.DecimalDigitNumber ||
+                uc == UnicodeCategory.LetterNumber || uc == UnicodeCategory.Format || uc == UnicodeCategory.ConnectorPunctuation;
+        }
 
-            StringBuilder sb = new StringBuilder();
-
+        private static string ConvertToValidIdentifier(string s) {
+            sb.Clear();
+            //changed = false;
             for(int c = 0; c < s.Length; c++) {
-                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(s[c]);
-
-                if(uc == UnicodeCategory.LowercaseLetter || uc == UnicodeCategory.UppercaseLetter) {
+                if(IsCharacterValidIdentifier(s[c])) {
                     sb.Append(s[c]);
                 } else {
                     sb.Append('_');
+                    //changed = true;
                 }
-
-                //if(s[c] >= '\u0041' && s[c] <= '\uFF3A') {
-                //    sb.Append(s[c]);
-                //} else {
-                //    sb.Append('_');
-                //}
             }
             return sb.ToString();
         }
@@ -133,6 +135,44 @@ namespace JesseStiller.PhLayerTool {
             }
 
             return newValue;
+        }
+
+        private static readonly int validatedTextField = "PhLayerValidatedTextField".GetHashCode();
+        internal static string ValidatedTextField(string label, string text, string defaultValue) {
+            Rect r = EditorGUILayout.GetControlRect();
+
+            int controlId = GUIUtility.GetControlID(validatedTextField, FocusType.Keyboard, r);
+            bool changed = false;
+            switch(Event.current.GetTypeForControl(controlId)) {
+                case EventType.KeyDown:
+                    if(Event.current.character == 0) break; // Allow backspace, delete, etc
+                    if(IsCharacterValidIdentifier(Event.current.character)) break;
+                    Event.current.Use();
+                    break;
+                case EventType.ExecuteCommand:
+                    // HACK: This changes the clipboard value, ideally it shouldn't with more complicated logic, but is it worth it?
+                    if(Event.current.commandName == "Paste") {
+                        EditorGUIUtility.systemCopyBuffer = ConvertToValidIdentifier(EditorGUIUtility.systemCopyBuffer);
+                    }
+                    break;
+            }
+
+            Rect controlRect = EditorGUI.PrefixLabel(r, controlId, new GUIContent(label));
+
+            //EditorGUI.RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField
+            object[] parameters = DoTextFieldParameters((TextEditor)recycledEditorField.GetValue(null), controlId, controlRect, text, GUI.skin.textField, null, changed, false, false, false);
+            text = (string)doTextFieldMethod.Invoke(null, parameters);
+
+            if(string.IsNullOrEmpty(text) && Event.current.type == EventType.Repaint) {
+                Styles.greyItalicLabel.Draw(controlRect, defaultValue, false, false, false, false);
+            }
+
+            return text;
+        }
+
+        // This is just to make things seem less magic and for IDE compatibility.
+        private static object[] DoTextFieldParameters(TextEditor editor, int controlId, Rect position, string text, GUIStyle style, string allowedLetters, bool changed, bool reset, bool multiline, bool passwordField) {
+            return new object[] { editor, controlId, position, text, style, allowedLetters, changed, reset, multiline, passwordField};
         }
 
         private static string TextAreaWithDefault(string label, string value, string defaultValue) {
