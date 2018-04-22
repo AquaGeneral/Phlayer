@@ -15,7 +15,8 @@ namespace JesseStiller.PhLayerTool {
     public class PreferencesPane {
         private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly FieldInfo recycledEditorField = typeof(EditorGUI).GetField("s_RecycledEditor", BindingFlags.NonPublic | BindingFlags.Static);
-
+        private static readonly string[] fileNameExtensions = new string[] { ".cs", ".g.cs" };
+        private static readonly string[] curlyBracketPreferences = new string[] { "Place On Same Line", "Place On New Line" };
         private static readonly int textFieldWithDefaultId = "PhLayer.TextFieldWithDefault".GetHashCode();
 
         private static readonly StringBuilder sb = new StringBuilder();
@@ -55,13 +56,13 @@ namespace JesseStiller.PhLayerTool {
             EditorGUIUtility.labelWidth = 130f;
 
             EditorGUI.BeginChangeCheck();
-            //PhLayer.settings.className = TextFieldWithDefault("Class Name*", PhLayer.settings.className, "Layers");
             PhLayer.settings.className = ValidatedTextField("Class Name", PhLayer.settings.className, "Layers");
             PhLayer.settings.classNamespace = EditorGUILayout.TextField("Class Namespace", PhLayer.settings.classNamespace);
             PhLayer.settings.casing = (Casing)EditorGUILayout.EnumPopup("Field Casing", PhLayer.settings.casing);
             PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
             PhLayer.settings.lineEndings = (LineEndings)EditorGUILayout.EnumPopup("Line Endings", PhLayer.settings.lineEndings);
-            PhLayer.settings.curlyBracketPreference = (CurlyBracketPreference)EditorGUILayout.EnumPopup("Curly Bracket Opening", PhLayer.settings.curlyBracketPreference);
+            PhLayer.settings.curlyBracketOnNewLine = (EditorGUILayout.Popup("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, curlyBracketPreferences) == 1);
+            PhLayer.settings.appendDotGInFileName = (EditorGUILayout.Popup("Filename Extension", PhLayer.settings.appendDotGInFileName ? 1 : 0, fileNameExtensions) == 1);
 
             EditorGUILayout.BeginHorizontal();
             PhLayer.settings.outputDirectory = TextAreaWithDefault("Output Directory*", PhLayer.settings.outputDirectory, "Assets\\");

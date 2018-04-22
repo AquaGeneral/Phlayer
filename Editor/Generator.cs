@@ -11,16 +11,6 @@ using UnityEngine;
 */
 
 namespace JesseStiller.PhLayerTool {
-    //Call generate each time Unity is opened
-    [InitializeOnLoad]
-    public static class Startup {
-        static Startup() {
-            if(EditorApplication.isPlayingOrWillChangePlaymode) return;
-            //PhLayerGenerator.Generate();
-            Debug.Log("Startup");
-        }
-    }
-
     public class Generator : AssetPostprocessor {
         private const string windowsLineEnding = "\r\n";
         private const string unixLineEnding = "\n";
@@ -37,13 +27,20 @@ namespace JesseStiller.PhLayerTool {
             }
         }
 
+        // [InitializeOnLoadMethod]
+        // private static void OnLoad() {
+        //     if(EditorApplication.isPlayingOrWillChangePlaymode) return;
+        //     Generator.Generate();
+        // }
+
         [MenuItem("Jesse Stiller/Update Layer Class")]
         internal static void Generate() {
             PhLayer.InitializeSettings();
 
             string className = string.IsNullOrEmpty(PhLayer.settings.className) ? "Layers" : PhLayer.settings.className;
             string outputDirectory = string.IsNullOrEmpty(PhLayer.settings.outputDirectory) ? "Assets\\" : PhLayer.settings.outputDirectory;
-            string localFilePath = Path.Combine(outputDirectory, className + ".g.cs");
+            string extension = PhLayer.settings.appendDotGInFileName ? ".g.cs" : ".cs";
+            string localFilePath = Path.Combine(outputDirectory, className + extension);
             string absoluteFilePath = GetAbsolutePathFromLocalPath(localFilePath);
 
             // Make sure that we are writing to one of our own files if already present, and not something created by a anyone/anything else.
@@ -78,7 +75,7 @@ namespace JesseStiller.PhLayerTool {
                 layerName = layerName.Replace(" ", "");
 
                 if(char.IsDigit(layerName[0])) {
-                    layerName = "_" + layerName;
+                    layerName = layerName.Insert(0, "_");
                 }
                 
                 switch(PhLayer.settings.casing) {
@@ -106,12 +103,12 @@ namespace JesseStiller.PhLayerTool {
 
             File.WriteAllText(absoluteFilePath, sb.ToString());
 
-            AssetDatabase.ImportAsset(localFilePath);
+            AssetDatabase.ImportAsset(localFilePath, ImportAssetOptions.ForceUpdate);
         }
 
         private static void AppendLineWithCurlyBracket(string v) {
             Append(v);
-            if(PhLayer.settings.curlyBracketPreference == CurlyBracketPreference.NewLine) {
+            if(PhLayer.settings.curlyBracketOnNewLine) {
                 AppendLine("");
                 AppendLine("{");
             } else {
