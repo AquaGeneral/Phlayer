@@ -10,7 +10,7 @@ namespace JesseStiller.PhLayerTool {
         internal static string ConvertToValidIdentifier(string s) {
             sb.Length = 0;
             for(int c = 0; c < s.Length; c++) {
-                if(IsCharacterValidIdentifier(s[c])) {
+                if(IsCharValidForIdentifier(s[c])) {
                     sb.Append(s[c]);
                 } else {
                     sb.Append('_');
@@ -19,7 +19,7 @@ namespace JesseStiller.PhLayerTool {
             return sb.ToString();
         }
 
-        internal static bool IsCharacterValidIdentifier(char c) {
+        internal static bool IsCharValidForIdentifier(char c) {
             UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
             return (uc >= UnicodeCategory.UppercaseLetter && uc <= UnicodeCategory.SpacingCombiningMark) || uc == UnicodeCategory.DecimalDigitNumber ||
                 uc == UnicodeCategory.LetterNumber || uc == UnicodeCategory.Format || uc == UnicodeCategory.ConnectorPunctuation;

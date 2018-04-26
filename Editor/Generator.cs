@@ -98,44 +98,50 @@ namespace JesseStiller.PhLayerTool {
             string className = string.IsNullOrEmpty(PhLayer.settings.className) ? "Layers" : PhLayer.settings.className;
             AppendLineWithCurlyBracket("public static class " + className);
 
-            int startIndex = PhLayer.settings.skipBuiltinLayers ? 8 : 0;
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
                 string layerName = LayerMask.LayerToName(i);
                 // TODO: Check for it being only whitespace
                 if(string.IsNullOrEmpty(layerName)) continue;
 
                 layerName = layerName.Replace(" ", "");
-
-                for(int c = 0; c < layerName.Length; c++) {
-                    //if(identi)
+                string newLayerName;
+                if(char.IsDigit(layerName[0])) {
+                    newLayerName = "_";
+                } else {
+                    newLayerName = "";
                 }
 
-                if(char.IsDigit(layerName[0])) {
-                    layerName = layerName.Insert(0, "_");
+                for(int c = 0; c < layerName.Length; c++) {
+                    if(layerName[c] == ' ' || Utilities.IsCharValidForIdentifier(layerName[c]) == false) {
+                        newLayerName += '_';
+                    } else {
+                        newLayerName += layerName[c];
+                    }
                 }
 
                 switch(PhLayer.settings.casing) {
                     case Casing.Camel:
-                        layerName = char.ToLowerInvariant(layerName[0]) + layerName.Substring(1);
+                        newLayerName = char.ToLowerInvariant(newLayerName[0]) + newLayerName.Substring(1);
                         break;
                     case Casing.Pascal:
                         throw new NotImplementedException();
                     case Casing.CapsLock:
-                        layerName = layerName.ToUpperInvariant();
+                        newLayerName = newLayerName.ToUpperInvariant();
                         break;
                     case Casing.CapsLockWithUnderscores:
                         break;
                 }
 
                 CSharpCodeProvider codeProvider = new CSharpCodeProvider();
-                layerName = codeProvider.CreateValidIdentifier(layerName);
+                newLayerName = codeProvider.CreateValidIdentifier(newLayerName);
 
-                AppendLine(string.Format("public const int {0} = {1};", layerName, i + startIndex));
+                AppendLine(string.Format("public const int {0} = {1};", newLayerName, i));
             }
 
             // Write all ending curly brakets
             while(indentation-- > 0) {
-                sb.Append("}");
+                if(indentation == 0) Append("}");
+                                else AppendLine("}");
             }
         }
         

@@ -7,10 +7,9 @@ using UnityEngine;
 
 /**
 * TODO:
-* - Validate class namespace,
-* - Validate class name
-* - Validate output directory 
 * - Output directory needs to allow for '/'
+* - Output directory that doesn't exist - do we have to create the folders manually?
+* - Implement all casings
 */
 
 namespace JesseStiller.PhLayerTool {
@@ -134,12 +133,12 @@ namespace JesseStiller.PhLayerTool {
             }
 
             using(new EditorGUILayout.HorizontalScope()) {
-                if(GUILayout.Button("Force Layers Class Generation", GUILayout.Width(140f), GUILayout.Height(22f))) {
+                if(GUILayout.Button("Generate Now", GUILayout.Width(120f), GUILayout.Height(22f))) {
                     Generator.GenerateAndSave();
                 }
 
                 GUI.enabled = !PhLayer.settings.Equals(defaultSettings);
-                if(GUILayout.Button("Restore Defaults", GUILayout.Width(140f), GUILayout.Height(22f))) {
+                if(GUILayout.Button("Restore Defaults", GUILayout.Width(120f), GUILayout.Height(22f))) {
                     PhLayer.settings = new Settings();
                 }
                 GUI.enabled = true;
@@ -255,7 +254,39 @@ namespace JesseStiller.PhLayerTool {
             switch(Event.current.GetTypeForControl(controlId)) {
                 case EventType.KeyDown:
                     if(Event.current.character == 0) break; // Allow backspace, delete, etc
-                    if(Utilities.IsCharacterValidIdentifier(Event.current.character)) break;
+                    if(Utilities.IsCharValidForIdentifier(Event.current.character)) break;
+                    Event.current.Use();
+                    break;
+                case EventType.ExecuteCommand:
+                    // HACK: This changes the clipboard value, ideally it shouldn't with more complicated logic, but is it worth it?
+                    if(Event.current.commandName == "Paste") {
+                        EditorGUIUtility.systemCopyBuffer = Utilities.ConvertToValidIdentifier(EditorGUIUtility.systemCopyBuffer);
+                    }
+                    break;
+            }
+
+            Rect controlRect = EditorGUI.PrefixLabel(r, controlId, new GUIContent(label));
+
+            //EditorGUI.RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField
+            object[] parameters = DoTextFieldParameters((TextEditor)recycledEditorField.GetValue(null), controlId, controlRect, text, GUI.skin.textField, null, changed, false, false, false);
+            text = (string)doTextFieldMethod.Invoke(null, parameters);
+
+            if(Event.current.type == EventType.Repaint && string.IsNullOrEmpty(defaultValue) == false && string.IsNullOrEmpty(text)) {
+                Styles.greyItalicLabel.Draw(controlRect, defaultValue, false, false, false, false);
+            }
+
+            return text;
+        }
+
+        internal static string FilePathTextField(string label, string text, string defaultValue = "") {
+            Rect r = EditorGUILayout.GetControlRect();
+
+            int controlId = GUIUtility.GetControlID(validatedTextFieldId, FocusType.Keyboard, r);
+            bool changed = false;
+            switch(Event.current.GetTypeForControl(controlId)) {
+                case EventType.KeyDown:
+                    if(Event.current.character == 0) break; // Allow backspace, delete, etc
+                    if(Utilities.IsCharValidForIdentifier(Event.current.character)) break;
                     Event.current.Use();
                     break;
                 case EventType.ExecuteCommand:
