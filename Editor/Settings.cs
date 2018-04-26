@@ -14,7 +14,7 @@ namespace JesseStiller.PhLayerTool {
         * The initial values also count as the default values (as per pressing "Restore Defaults").
         * The defaults simply match Microsoft's preferences used on MSDN documentation.
         */
-        public bool appendHeader = true;
+        public bool includeHeader = true;
         public Casing casing = Casing.Pascal;
         public bool skipBuiltinLayers = false;
         public string outputDirectory = "";

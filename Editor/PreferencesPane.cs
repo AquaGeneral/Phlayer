@@ -9,6 +9,8 @@ using UnityEngine;
 * TODO:
 * - Validate class namespace,
 * - Validate class name
+* - Validate output directory 
+* - Output directory needs to allow for '/'
 */
 
 namespace JesseStiller.PhLayerTool {
@@ -16,17 +18,15 @@ namespace JesseStiller.PhLayerTool {
         private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType("UnityEditor.PreferencesWindow");
         private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly FieldInfo recycledEditorField = typeof(EditorGUI).GetField("s_RecycledEditor", BindingFlags.NonPublic | BindingFlags.Static);
-        private static readonly int textFieldWithDefaultId = "PhLayer.TextFieldWithDefault".GetHashCode();
-
+        private static readonly int radioButtonsControlHash = "PhLayer.RadioButtons".GetHashCode();
         private static readonly Settings defaultSettings = new Settings();
 
         private static string generatorPreviewText;
         private static bool previewFoldout = false;
-
         private static bool expandWindowHeight = false;
 
         private static class Styles {
-            internal static GUIStyle greyItalicLabel, wordWrappedTextArea, previewTextArea;
+            internal static GUIStyle greyItalicLabel, wordWrappedTextArea, previewTextArea, radioButton;
             internal static void Initialize() {
                 if(greyItalicLabel == null) {
                     greyItalicLabel = new GUIStyle(GUI.skin.label);
@@ -39,17 +39,22 @@ namespace JesseStiller.PhLayerTool {
                     wordWrappedTextArea.wordWrap = true;
                 }
                 if(previewTextArea == null) {
-                    previewTextArea = new GUIStyle("ScriptText");
-                    previewTextArea.stretchHeight = false;
-                    previewTextArea.stretchWidth = false;
+                    previewTextArea = new GUIStyle(GUI.skin.box);
+                    previewTextArea.alignment = TextAnchor.UpperLeft;
+                    previewTextArea.font = EditorStyles.miniLabel.font;
                     previewTextArea.fontSize = 10;
+                }
+                if(radioButton == null) {
+                    radioButton = new GUIStyle(EditorStyles.radioButton);
+                    radioButton.padding = new RectOffset(radioButton.padding.left, 2, 0, 0);
                 }
             }
         }
 
         private static class Contents {
-            internal static readonly string[] fileNameExtensions = new string[] { ".cs", ".g.cs" };
-            internal static readonly string[] curlyBracketPreferences = new string[] { "Place On Same Line", "Place On New Line" };
+            internal static readonly GUIContent[] fileNameExtensions = new GUIContent[] { new GUIContent(".cs"), new GUIContent(".g.cs") };
+            internal static readonly GUIContent[] curlyBracketPreference = new GUIContent[] { new GUIContent("Same Line"), new GUIContent("New Line") };
+            internal static readonly GUIContent[] lineEndings = new GUIContent[] { new GUIContent("Windows-style"), new GUIContent("Unix-style") };
             internal static readonly string[] casing = new string[] {
                 "Leave As-Is", "Camel", "Pascal", "Caps Lock", "Caps Lock (Underscored)",
             };
@@ -73,22 +78,15 @@ namespace JesseStiller.PhLayerTool {
                     break;
             }
 
+            EditorGUIUtility.labelWidth = 140f;
+
+            /**
+            * File
+            */
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.LabelField("Generated Code", EditorStyles.boldLabel);
-
-            EditorGUIUtility.labelWidth = 130f;
-
-            EditorGUI.BeginChangeCheck();
-            PhLayer.settings.className = ValidatedTextField("Class Name", PhLayer.settings.className, "Layers");
-            PhLayer.settings.classNamespace = EditorGUILayout.TextField("Class Namespace", PhLayer.settings.classNamespace);
-            PhLayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)PhLayer.settings.casing, Contents.casing);
-            PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
-            PhLayer.settings.lineEndings = (LineEndings)EditorGUILayout.EnumPopup("Line Endings", PhLayer.settings.lineEndings);
-            PhLayer.settings.appendHeader = EditorGUILayout.Toggle("Append Header", PhLayer.settings.appendHeader);
-            PhLayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.EnumPopup("Indentation Style", PhLayer.settings.indentationStyle);
-            PhLayer.settings.curlyBracketOnNewLine = (EditorGUILayout.Popup("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, Contents.curlyBracketPreferences) == 1);
-            PhLayer.settings.appendDotGInFileName = (EditorGUILayout.Popup("Filename Extension", PhLayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1);
-
+            EditorGUILayout.LabelField("File", EditorStyles.boldLabel);
+            PhLayer.settings.className = ValidatedTextField("Class Name*", PhLayer.settings.className, "Layers");
+            PhLayer.settings.appendDotGInFileName = RadioButtonsControl(new GUIContent("Filename Extension"), PhLayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
             EditorGUILayout.BeginHorizontal();
             PhLayer.settings.outputDirectory = TextAreaWithDefault("Output Directory*", PhLayer.settings.outputDirectory, "Assets\\");
             if(GUILayout.Button("Browse…", GUILayout.Width(70f), GUILayout.Height(22f))) {
@@ -96,7 +94,23 @@ namespace JesseStiller.PhLayerTool {
                 if(string.IsNullOrEmpty(chosenPath) == false) PhLayer.settings.outputDirectory = GetLocalPathFromAbsolutePath(chosenPath);
             }
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.LabelField("Output Filepath", Generator.GetLocalPath());
+
+            /**
+            * Generated Code
+            */
+            EditorGUILayout.LabelField("Generated Code", EditorStyles.boldLabel);
+            PhLayer.settings.classNamespace = ValidatedTextField("Class Namespace", PhLayer.settings.classNamespace);
+            PhLayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)PhLayer.settings.casing, Contents.casing);
+            PhLayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.EnumPopup("Indentation Style", PhLayer.settings.indentationStyle);
+            PhLayer.settings.lineEndings = (LineEndings)RadioButtonsControl(new GUIContent("Line Endings"), (int)PhLayer.settings.lineEndings, Contents.lineEndings);
+            PhLayer.settings.curlyBracketOnNewLine = RadioButtonsControl(new GUIContent("Curly Brackets"), PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, Contents.curlyBracketPreference) == 1;
+            PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
+            PhLayer.settings.includeHeader = EditorGUILayout.Toggle("Include Header", PhLayer.settings.includeHeader);
+
             if(EditorGUI.EndChangeCheck()) {
+                generatorPreviewText = Generator.GetPreview();
+                if(previewFoldout) expandWindowHeight = true;
                 PhLayer.SaveSettings();
             }
 
@@ -105,11 +119,6 @@ namespace JesseStiller.PhLayerTool {
                 EditorStyles.centeredGreyMiniLabel.richText = true;
                 GUILayout.Label("* Values in <i>italics</i> represent default values", EditorStyles.centeredGreyMiniLabel);
                 EditorStyles.centeredGreyMiniLabel.richText = false;
-            }
-
-            if(EditorGUI.EndChangeCheck()) {
-                generatorPreviewText = Generator.GetPreview();
-                if(previewFoldout) expandWindowHeight = true;
             }
 
             using(EditorGUI.ChangeCheckScope change = new EditorGUI.ChangeCheckScope()) {
@@ -155,27 +164,93 @@ namespace JesseStiller.PhLayerTool {
             }
         }
 
-        private static string TextFieldWithDefault(string label, string value, string defaultValue) {
-            string newValue = EditorGUILayout.TextField(label, value);
+        /// <summary>
+        /// A radio button control that doesn't cutoff certain characters and with intelligent spacing between options.
+        /// </summary>
+        /// <returns>The index of the selected radio button.</returns>
+        internal static int RadioButtonsControl(GUIContent labelContent, int selectedIndex, GUIContent[] radioButtonOptions) {
+            Rect controlRect = EditorGUILayout.GetControlRect();
+            Rect toolbarRect = EditorGUI.PrefixLabel(controlRect, labelContent);
 
-            //int controlId = GUIUtility.GetControlID("TextField".GetHashCode(), rect);
-            //Event controlEvent = Event.current.GetTypeForControl(controlId);
+            if(radioButtonOptions.Length == 0) return selectedIndex;
 
-            Rect rect = GUILayoutUtility.GetLastRect();
-            if(string.IsNullOrEmpty(value)) {
-                if(Event.current.type == EventType.Repaint) {
-                    Styles.greyItalicLabel.Draw(new Rect(rect.x + EditorGUIUtility.labelWidth, rect.y, 200f, rect.height), defaultValue, false, false, false, false);
+            int toolbarOptionsCount = radioButtonOptions.Length;
+            float[] widths = new float[toolbarOptionsCount];
+            bool useEqualSpacing = true;
+            float totalContentsWidths = 0f;
+            float maxWidthPerContent = toolbarRect.width / toolbarOptionsCount;
+
+            // Calculate widths of the options and check if the options can be displayed with equal width without anything being cutoff.
+            for(int i = 0; i < toolbarOptionsCount; i++) {
+                widths[i] = EditorStyles.radioButton.CalcSize(radioButtonOptions[i]).x;
+                totalContentsWidths += widths[i];
+
+                // If the width of the GUIContent extends the max width per content while mantaining equal spacing then equal spacing cannot be maintained.
+                if(useEqualSpacing && widths[i] > maxWidthPerContent) {
+                    useEqualSpacing = false;
                 }
             }
 
-            return newValue;
+            float gapPerOption = (toolbarRect.width - totalContentsWidths) / (toolbarOptionsCount - 1);
+
+            // Find the selected option
+            float optionOffset = toolbarRect.x;
+            int newSelectedIndex = -1;
+            for(int i = 0; i < toolbarOptionsCount; i++) {
+                float width = useEqualSpacing ? maxWidthPerContent : gapPerOption + widths[i];
+                if(Event.current.mousePosition.x >= optionOffset && Event.current.mousePosition.x <= optionOffset + width) {
+                    newSelectedIndex = i;
+                }
+                optionOffset += width;
+            }
+
+            int controlId = GUIUtility.GetControlID(radioButtonsControlHash, FocusType.Passive, controlRect);
+            switch(Event.current.GetTypeForControl(controlId)) {
+                case EventType.MouseDown:
+                    if(toolbarRect.Contains(Event.current.mousePosition) == false) break;
+                    GUIUtility.hotControl = controlId;
+                    Event.current.Use();
+                    break;
+                case EventType.MouseUp:
+                    if(GUIUtility.hotControl != controlId) break;
+                    GUIUtility.hotControl = 0;
+                    Event.current.Use();
+                    GUI.changed = true;
+
+                    if(newSelectedIndex == -1) return 0;
+
+                    return newSelectedIndex;
+                case EventType.MouseDrag:
+                    if(GUIUtility.hotControl == controlId) Event.current.Use();
+                    break;
+                case EventType.Repaint:
+                    float xOffset = toolbarRect.x;
+                    for(int i = 0; i < toolbarOptionsCount; i++) {
+                        Styles.radioButton.Draw(
+                            position: new Rect(xOffset, toolbarRect.y - 1, widths[i], toolbarRect.height),
+                            content: radioButtonOptions[i],
+                            isHover: i == newSelectedIndex && (GUI.enabled || controlId == GUIUtility.hotControl) && (controlId == GUIUtility.hotControl || GUIUtility.hotControl == 0),
+                            isActive: GUIUtility.hotControl == controlId && GUI.enabled,
+                            on: i == selectedIndex,
+                            hasKeyboardFocus: false);
+
+                        if(useEqualSpacing) {
+                            xOffset += maxWidthPerContent;
+                        } else {
+                            xOffset += gapPerOption + widths[i];
+                        }
+                    }
+                    break;
+            }
+
+            return selectedIndex;
         }
 
-        private static readonly int validatedTextField = "PhLayerValidatedTextField".GetHashCode();
-        internal static string ValidatedTextField(string label, string text, string defaultValue) {
+        private static readonly int validatedTextFieldId = "PhLayerValidatedTextField".GetHashCode();
+        internal static string ValidatedTextField(string label, string text, string defaultValue = "") {
             Rect r = EditorGUILayout.GetControlRect();
 
-            int controlId = GUIUtility.GetControlID(validatedTextField, FocusType.Keyboard, r);
+            int controlId = GUIUtility.GetControlID(validatedTextFieldId, FocusType.Keyboard, r);
             bool changed = false;
             switch(Event.current.GetTypeForControl(controlId)) {
                 case EventType.KeyDown:
@@ -197,7 +272,7 @@ namespace JesseStiller.PhLayerTool {
             object[] parameters = DoTextFieldParameters((TextEditor)recycledEditorField.GetValue(null), controlId, controlRect, text, GUI.skin.textField, null, changed, false, false, false);
             text = (string)doTextFieldMethod.Invoke(null, parameters);
 
-            if(string.IsNullOrEmpty(text) && Event.current.type == EventType.Repaint) {
+            if(Event.current.type == EventType.Repaint && string.IsNullOrEmpty(defaultValue) == false && string.IsNullOrEmpty(text)) {
                 Styles.greyItalicLabel.Draw(controlRect, defaultValue, false, false, false, false);
             }
 

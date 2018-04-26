@@ -48,10 +48,7 @@ namespace JesseStiller.PhLayerTool {
             }
             Generate(preview: true);
 
-            string className = string.IsNullOrEmpty(PhLayer.settings.className) ? "Layers" : PhLayer.settings.className;
-            string outputDirectory = string.IsNullOrEmpty(PhLayer.settings.outputDirectory) ? "Assets\\" : PhLayer.settings.outputDirectory;
-            string extension = PhLayer.settings.appendDotGInFileName ? ".g.cs" : ".cs";
-            string localFilePath = Path.Combine(outputDirectory, className + extension);
+            string localFilePath = GetLocalPath();
             string absoluteFilePath = GetAbsolutePathFromLocalPath(localFilePath);
 
             // Make sure that we are writing to one of our own files if already present, and not something created by a anyone/anything else.
@@ -68,6 +65,13 @@ namespace JesseStiller.PhLayerTool {
             AssetDatabase.ImportAsset(localFilePath, ImportAssetOptions.ForceUpdate);
         }
 
+        internal static string GetLocalPath() {
+            string className = string.IsNullOrEmpty(PhLayer.settings.className) ? "Layers" : PhLayer.settings.className;
+            string outputDirectory = string.IsNullOrEmpty(PhLayer.settings.outputDirectory) ? "Assets\\" : PhLayer.settings.outputDirectory;
+            string extension = PhLayer.settings.appendDotGInFileName ? ".g.cs" : ".cs";
+            return Path.Combine(outputDirectory, className + extension);
+        }
+
         private static void Generate(bool preview) {
             // Don't display the tabs in the preview because they are way too wide and seemingly can't be shrinked.
             if(preview && PhLayer.settings.indentationStyle == IndentationStyle.Tabs) {
@@ -80,7 +84,7 @@ namespace JesseStiller.PhLayerTool {
             sb.Length = 0;
             indentation = 0;
 
-            if(PhLayer.settings.appendHeader) {
+            if(PhLayer.settings.includeHeader) {
                 if(preview) AppendLine(previewHeader);
                 else        AppendLine(header);
             }
@@ -91,7 +95,8 @@ namespace JesseStiller.PhLayerTool {
             }
 
             // Class declaration
-            AppendLineWithCurlyBracket("public static class " + PhLayer.settings.className);
+            string className = string.IsNullOrEmpty(PhLayer.settings.className) ? "Layers" : PhLayer.settings.className;
+            AppendLineWithCurlyBracket("public static class " + className);
 
             int startIndex = PhLayer.settings.skipBuiltinLayers ? 8 : 0;
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
