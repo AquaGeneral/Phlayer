@@ -21,10 +21,9 @@ namespace JesseStiller.PhLayerTool {
             int lineCount;
             int directoryCount = 0;
             string line;
-            IEnumerable<string> phLayerDirectories = Directory.EnumerateDirectories(Application.dataPath, "*PhLayer", SearchOption.AllDirectories);
-            foreach(string phLayerDirectory in phLayerDirectories) {
+            foreach(string phLayerDirectory in Directory.GetDirectories(Application.dataPath, "*PhLayer", SearchOption.AllDirectories)) {
                 directoryCount++;
-                foreach(string filePath in Directory.EnumerateFiles(phLayerDirectory, "*.cs", SearchOption.AllDirectories)) {
+                foreach(string filePath in Directory.GetFiles(phLayerDirectory, "*.cs", SearchOption.AllDirectories)) {
                     using(StreamReader sr = new StreamReader(filePath)) {
                         lineCount = 0;
                         while((line = sr.ReadLine()) != null) {

@@ -13,16 +13,20 @@ using UnityEngine;
 
 namespace JesseStiller.PhLayerTool {
     public class PreferencesPane {
+        private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType("UnityEditor.PreferencesWindow");
         private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly FieldInfo recycledEditorField = typeof(EditorGUI).GetField("s_RecycledEditor", BindingFlags.NonPublic | BindingFlags.Static);
-        private static readonly string[] fileNameExtensions = new string[] { ".cs", ".g.cs" };
-        private static readonly string[] curlyBracketPreferences = new string[] { "Place On Same Line", "Place On New Line" };
         private static readonly int textFieldWithDefaultId = "PhLayer.TextFieldWithDefault".GetHashCode();
 
-        private static readonly StringBuilder sb = new StringBuilder();
+        private static readonly Settings defaultSettings = new Settings();
+
+        private static string generatorPreviewText;
+        private static bool previewFoldout = false;
+
+        private static bool expandWindowHeight = false;
 
         private static class Styles {
-            internal static GUIStyle greyItalicLabel, wordWrappedTextArea;
+            internal static GUIStyle greyItalicLabel, wordWrappedTextArea, previewTextArea;
             internal static void Initialize() {
                 if(greyItalicLabel == null) {
                     greyItalicLabel = new GUIStyle(GUI.skin.label);
@@ -34,13 +38,31 @@ namespace JesseStiller.PhLayerTool {
                     wordWrappedTextArea = new GUIStyle(GUI.skin.textArea);
                     wordWrappedTextArea.wordWrap = true;
                 }
+                if(previewTextArea == null) {
+                    previewTextArea = new GUIStyle("ScriptText");
+                    previewTextArea.stretchHeight = false;
+                    previewTextArea.stretchWidth = false;
+                    previewTextArea.fontSize = 10;
+                }
             }
+        }
+
+        private static class Contents {
+            internal static readonly string[] fileNameExtensions = new string[] { ".cs", ".g.cs" };
+            internal static readonly string[] curlyBracketPreferences = new string[] { "Place On Same Line", "Place On New Line" };
+            internal static readonly string[] casing = new string[] {
+                "Leave As-Is", "Camel", "Pascal", "Caps Lock", "Caps Lock (Underscored)",
+            };
         }
 
         [PreferenceItem("PhLayer")]
         private static void DrawPreferences() {
             Styles.Initialize();
             PhLayer.InitializeSettings();
+
+            if(string.IsNullOrEmpty(generatorPreviewText)) {
+                generatorPreviewText = Generator.GetPreview();
+            }
 
             switch(PhLayer.errorState) {
                 case SettingsError.NoDirectory:
@@ -51,6 +73,7 @@ namespace JesseStiller.PhLayerTool {
                     break;
             }
 
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.LabelField("Generated Code", EditorStyles.boldLabel);
 
             EditorGUIUtility.labelWidth = 130f;
@@ -58,11 +81,13 @@ namespace JesseStiller.PhLayerTool {
             EditorGUI.BeginChangeCheck();
             PhLayer.settings.className = ValidatedTextField("Class Name", PhLayer.settings.className, "Layers");
             PhLayer.settings.classNamespace = EditorGUILayout.TextField("Class Namespace", PhLayer.settings.classNamespace);
-            PhLayer.settings.casing = (Casing)EditorGUILayout.EnumPopup("Field Casing", PhLayer.settings.casing);
+            PhLayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)PhLayer.settings.casing, Contents.casing);
             PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
             PhLayer.settings.lineEndings = (LineEndings)EditorGUILayout.EnumPopup("Line Endings", PhLayer.settings.lineEndings);
-            PhLayer.settings.curlyBracketOnNewLine = (EditorGUILayout.Popup("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, curlyBracketPreferences) == 1);
-            PhLayer.settings.appendDotGInFileName = (EditorGUILayout.Popup("Filename Extension", PhLayer.settings.appendDotGInFileName ? 1 : 0, fileNameExtensions) == 1);
+            PhLayer.settings.appendHeader = EditorGUILayout.Toggle("Append Header", PhLayer.settings.appendHeader);
+            PhLayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.EnumPopup("Indentation Style", PhLayer.settings.indentationStyle);
+            PhLayer.settings.curlyBracketOnNewLine = (EditorGUILayout.Popup("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, Contents.curlyBracketPreferences) == 1);
+            PhLayer.settings.appendDotGInFileName = (EditorGUILayout.Popup("Filename Extension", PhLayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1);
 
             EditorGUILayout.BeginHorizontal();
             PhLayer.settings.outputDirectory = TextAreaWithDefault("Output Directory*", PhLayer.settings.outputDirectory, "Assets\\");
@@ -82,36 +107,44 @@ namespace JesseStiller.PhLayerTool {
                 EditorStyles.centeredGreyMiniLabel.richText = false;
             }
 
-            EditorGUILayout.BeginHorizontal();
-            if(GUILayout.Button("Force Generate", GUILayout.Width(140f), GUILayout.Height(22f))) {
-                Generator.Generate();
+            if(EditorGUI.EndChangeCheck()) {
+                generatorPreviewText = Generator.GetPreview();
+                if(previewFoldout) expandWindowHeight = true;
             }
 
-            if(GUILayout.Button("Restore Defaults", GUILayout.Width(140f), GUILayout.Height(22f))) {
-
-            }
-
-            EditorGUILayout.EndHorizontal();
-        }
-
-        private static bool IsCharacterValidIdentifier(char c) {
-            UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(c);
-            return (uc >= UnicodeCategory.UppercaseLetter && uc <= UnicodeCategory.SpacingCombiningMark) || uc == UnicodeCategory.DecimalDigitNumber ||
-                uc == UnicodeCategory.LetterNumber || uc == UnicodeCategory.Format || uc == UnicodeCategory.ConnectorPunctuation;
-        }
-
-        private static string ConvertToValidIdentifier(string s) {
-            sb.Clear();
-            //changed = false;
-            for(int c = 0; c < s.Length; c++) {
-                if(IsCharacterValidIdentifier(s[c])) {
-                    sb.Append(s[c]);
-                } else {
-                    sb.Append('_');
-                    //changed = true;
+            using(EditorGUI.ChangeCheckScope change = new EditorGUI.ChangeCheckScope()) {
+                previewFoldout = EditorGUILayout.Foldout(previewFoldout, "Preview", true);
+                if(change.changed && previewFoldout) {
+                    expandWindowHeight = true;
                 }
             }
-            return sb.ToString();
+            if(previewFoldout) {
+                Rect previewTextAreaRect = EditorGUILayout.GetControlRect(
+                    GUILayout.ExpandWidth(true), GUILayout.Height(Styles.previewTextArea.CalcSize(new GUIContent(generatorPreviewText)).y));
+                EditorGUI.TextArea(previewTextAreaRect, generatorPreviewText, Styles.previewTextArea);
+            }
+
+            using(new EditorGUILayout.HorizontalScope()) {
+                if(GUILayout.Button("Force Layers Class Generation", GUILayout.Width(140f), GUILayout.Height(22f))) {
+                    Generator.GenerateAndSave();
+                }
+
+                GUI.enabled = !PhLayer.settings.Equals(defaultSettings);
+                if(GUILayout.Button("Restore Defaults", GUILayout.Width(140f), GUILayout.Height(22f))) {
+                    PhLayer.settings = new Settings();
+                }
+                GUI.enabled = true;
+            }
+
+            // Expand the window height so that is shows all of our GUI elements
+            if(expandWindowHeight && Event.current.type == EventType.Repaint) {
+                Rect lastRect = GUILayoutUtility.GetLastRect();
+                EditorWindow editorWindow = EditorWindow.GetWindow(unityPreferencesWindowType);
+                editorWindow.position = new Rect(
+                    editorWindow.position.x, editorWindow.position.y, editorWindow.position.width, Mathf.Max(editorWindow.position.height, lastRect.y + lastRect.height + 60f)
+                );
+                expandWindowHeight = false;
+            }
         }
 
         private static string GetOutputDirectory() {
@@ -147,13 +180,13 @@ namespace JesseStiller.PhLayerTool {
             switch(Event.current.GetTypeForControl(controlId)) {
                 case EventType.KeyDown:
                     if(Event.current.character == 0) break; // Allow backspace, delete, etc
-                    if(IsCharacterValidIdentifier(Event.current.character)) break;
+                    if(Utilities.IsCharacterValidIdentifier(Event.current.character)) break;
                     Event.current.Use();
                     break;
                 case EventType.ExecuteCommand:
                     // HACK: This changes the clipboard value, ideally it shouldn't with more complicated logic, but is it worth it?
                     if(Event.current.commandName == "Paste") {
-                        EditorGUIUtility.systemCopyBuffer = ConvertToValidIdentifier(EditorGUIUtility.systemCopyBuffer);
+                        EditorGUIUtility.systemCopyBuffer = Utilities.ConvertToValidIdentifier(EditorGUIUtility.systemCopyBuffer);
                     }
                     break;
             }

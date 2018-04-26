@@ -1,5 +1,6 @@
 ﻿using Microsoft.CSharp;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEditor;
@@ -14,28 +15,38 @@ namespace JesseStiller.PhLayerTool {
     public class Generator : AssetPostprocessor {
         private const string windowsLineEnding = "\r\n";
         private const string unixLineEnding = "\n";
-        private static string header = "// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension.";
-        // TODO: Is a text writer faster?
+        private const string header = "// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension.";
+        private const string previewHeader = "// Auto-generated.";
         private static StringBuilder sb = new StringBuilder(512);
+        private static readonly string[] indentatorsArray = { " ", "  ", "   ", "    ", "\t" };
         private static byte indentation;
+
+        private static string indentator;
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
             foreach(string str in importedAssets) {
                 if(str.Equals("ProjectSettings/TagManager.asset", StringComparison.OrdinalIgnoreCase)) {
-                    Generate();
+                    GenerateAndSave();
                 }
             }
         }
 
+        // TODO: Get this working without creating an infinite loop
         // [InitializeOnLoadMethod]
         // private static void OnLoad() {
         //     if(EditorApplication.isPlayingOrWillChangePlaymode) return;
         //     Generator.Generate();
         // }
 
-        [MenuItem("Jesse Stiller/Update Layer Class")]
-        internal static void Generate() {
+        [MenuItem("Assets/PhLayer/Force Class Generation")]
+        internal static void GenerateAndSave() {
             PhLayer.InitializeSettings();
+
+            List<string> layerNames = new List<string>(32);
+            for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
+                layerNames.Add(LayerMask.LayerToName(i));
+            }
+            Generate(preview: true);
 
             string className = string.IsNullOrEmpty(PhLayer.settings.className) ? "Layers" : PhLayer.settings.className;
             string outputDirectory = string.IsNullOrEmpty(PhLayer.settings.outputDirectory) ? "Assets\\" : PhLayer.settings.outputDirectory;
@@ -47,18 +58,32 @@ namespace JesseStiller.PhLayerTool {
             if(File.Exists(absoluteFilePath)) {
                 using(StreamReader sr = new StreamReader(absoluteFilePath)) {
                     if(sr.ReadLine().StartsWith(header, StringComparison.Ordinal) == false) {
-                        bool overwriteAnyway = EditorUtility.DisplayDialog("PhLayer", "PhLayer was going to update the generated layers physics layers class, but it is going to overwrite a non-matching file at:\n" + 
+                        bool overwriteAnyway = EditorUtility.DisplayDialog("PhLayer", "PhLayer was going to update the generated layers physics layers class, but it is going to overwrite a non-matching file at:\n" +
                             absoluteFilePath, "Overwrite anyway", "Don't overwrite");
                         if(overwriteAnyway == false) return;
                     }
                 }
             }
+            File.WriteAllText(absoluteFilePath, sb.ToString());
+            AssetDatabase.ImportAsset(localFilePath, ImportAssetOptions.ForceUpdate);
+        }
+
+        private static void Generate(bool preview) {
+            // Don't display the tabs in the preview because they are way too wide and seemingly can't be shrinked.
+            if(preview && PhLayer.settings.indentationStyle == IndentationStyle.Tabs) {
+                indentator = indentatorsArray[(byte)IndentationStyle.Spaces4];
+            } else {
+                indentator = indentatorsArray[(byte)PhLayer.settings.indentationStyle];
+            }
 
             // Reset state
-            sb.Clear();
+            sb.Length = 0;
             indentation = 0;
-            
-            AppendLine(header);
+
+            if(PhLayer.settings.appendHeader) {
+                if(preview) AppendLine(previewHeader);
+                else        AppendLine(header);
+            }
 
             // Namespace
             if(string.IsNullOrEmpty(PhLayer.settings.classNamespace) == false) {
@@ -67,43 +92,55 @@ namespace JesseStiller.PhLayerTool {
 
             // Class declaration
             AppendLineWithCurlyBracket("public static class " + PhLayer.settings.className);
-            
+
+            int startIndex = PhLayer.settings.skipBuiltinLayers ? 8 : 0;
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
-                string layerName = UnityEngine.LayerMask.LayerToName(i);
+                string layerName = LayerMask.LayerToName(i);
+                // TODO: Check for it being only whitespace
                 if(string.IsNullOrEmpty(layerName)) continue;
 
                 layerName = layerName.Replace(" ", "");
 
+                for(int c = 0; c < layerName.Length; c++) {
+                    //if(identi)
+                }
+
                 if(char.IsDigit(layerName[0])) {
                     layerName = layerName.Insert(0, "_");
                 }
-                
+
                 switch(PhLayer.settings.casing) {
                     case Casing.Camel:
                         layerName = char.ToLowerInvariant(layerName[0]) + layerName.Substring(1);
                         break;
                     case Casing.Pascal:
                         throw new NotImplementedException();
-                        break;
                     case Casing.CapsLock:
                         layerName = layerName.ToUpperInvariant();
+                        break;
+                    case Casing.CapsLockWithUnderscores:
                         break;
                 }
 
                 CSharpCodeProvider codeProvider = new CSharpCodeProvider();
                 layerName = codeProvider.CreateValidIdentifier(layerName);
-                
-                AppendLine(string.Format("public const int {0} = {1};", layerName, i));
+
+                AppendLine(string.Format("public const int {0} = {1};", layerName, i + startIndex));
             }
 
             // Write all ending curly brakets
             while(indentation-- > 0) {
-                AppendLine("}");
+                sb.Append("}");
             }
+        }
+        
 
-            File.WriteAllText(absoluteFilePath, sb.ToString());
+        internal static string GetPreview() {
+            Settings previewSettings = PhLayer.settings.Clone();
+            previewSettings.indentationStyle = IndentationStyle.Spaces4;
 
-            AssetDatabase.ImportAsset(localFilePath, ImportAssetOptions.ForceUpdate);
+            Generate(preview: true);
+            return sb.ToString();
         }
 
         private static void AppendLineWithCurlyBracket(string v) {
@@ -121,7 +158,10 @@ namespace JesseStiller.PhLayerTool {
 
         private static void Append(string s) {
             Debug.Assert(indentation < 10);
-            for(int i = 0; i < indentation; i++) sb.Append('\t');
+
+            for(byte i = 0; i < indentation; i++) {
+                sb.Append(indentator);
+            }
             sb.Append(s);
         }
 
