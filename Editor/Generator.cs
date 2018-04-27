@@ -18,6 +18,7 @@ namespace JesseStiller.PhLayerTool {
         private const string header = "// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension.";
         private const string previewHeader = "// Auto-generated.";
         private static StringBuilder sb = new StringBuilder(512);
+        private static StringBuilder auxSB = new StringBuilder(32); // An auxillary string builder
         private static readonly string[] indentatorsArray = { " ", "  ", "   ", "    ", "\t" };
         private static byte indentation;
 
@@ -102,10 +103,16 @@ namespace JesseStiller.PhLayerTool {
             string className = string.IsNullOrEmpty(PhLayer.settings.className) ? "Layers" : PhLayer.settings.className;
             AppendLineWithCurlyBracket("public static class " + className);
 
+            CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
                 string layerName = LayerMask.LayerToName(i);
-                // TODO: Check for it being only whitespace
-                if(string.IsNullOrEmpty(layerName)) continue;
+                
+                if(IsNullOrWhitespace(layerName)) continue;
+
+                for(int c = 0; c < layerName.Length; c++) {
+                    //auxSB.Append();
+                }
 
                 layerName = layerName.Replace(" ", "");
                 string newLayerName;
@@ -136,8 +143,13 @@ namespace JesseStiller.PhLayerTool {
                         break;
                 }
 
-                CSharpCodeProvider codeProvider = new CSharpCodeProvider();
-                newLayerName = codeProvider.CreateValidIdentifier(newLayerName);
+                if(codeProvider.IsValidIdentifier(auxSB.ToString()) == false) {
+                    if(PhLayer.settings.escapeIdentifiersWithAtSymbol) {
+                        auxSB.Insert(0, '@');
+                    } else {
+                        auxSB.Insert(0, '_');
+                    }
+                }
 
                 AppendLine(string.Format("public const int {0} = {1};", newLayerName, i));
             }
@@ -148,7 +160,14 @@ namespace JesseStiller.PhLayerTool {
                                 else AppendLine("}");
             }
         }
-        
+
+        private static bool IsNullOrWhitespace(string value) {
+            if(value == null) return true;
+            for(int i = 0; i < value.Length; i++) {
+                if(char.IsWhiteSpace(value[i])) return false;
+            }
+            return true;
+        }
 
         internal static string GetPreview() {
             Settings previewSettings = PhLayer.settings.Clone();

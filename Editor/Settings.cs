@@ -21,6 +21,7 @@ namespace JesseStiller.PhLayerTool {
         public string classNamespace = "";
         public string className = "Layers";
         public bool appendDotGInFileName = true;
+        public bool escapeIdentifiersWithAtSymbol = true;
         public bool curlyBracketOnNewLine = true;
         public LineEndings lineEndings = LineEndings.Windows;
         public IndentationStyle indentationStyle = IndentationStyle.Spaces4;
