@@ -7,8 +7,6 @@ using UnityEngine;
 
 /**
 * TODO:
-* - Output directory needs to allow for '/'
-* - Output directory that doesn't exist - do we have to create the folders manually?
 * - Implement all casings
 */
 
@@ -23,9 +21,9 @@ namespace JesseStiller.PhLayerTool {
         private static string generatorPreviewText;
         private static bool previewFoldout = false;
         private static bool expandWindowHeight = false;
-
+        
         private static class Styles {
-            internal static GUIStyle greyItalicLabel, wordWrappedTextArea, previewTextArea, radioButton;
+            internal static GUIStyle greyItalicLabel, wordWrappedTextField, previewTextArea, radioButton;
             internal static void Initialize() {
                 if(greyItalicLabel == null) {
                     greyItalicLabel = new GUIStyle(GUI.skin.label);
@@ -33,9 +31,9 @@ namespace JesseStiller.PhLayerTool {
                     greyItalicLabel.margin = GUI.skin.textField.margin;
                     greyItalicLabel.fontStyle = FontStyle.Italic;
                 }
-                if(wordWrappedTextArea == null) {
-                    wordWrappedTextArea = new GUIStyle(GUI.skin.textArea);
-                    wordWrappedTextArea.wordWrap = true;
+                if(wordWrappedTextField == null) {
+                    wordWrappedTextField = new GUIStyle(GUI.skin.textField);
+                    wordWrappedTextField.wordWrap = true;
                 }
                 if(previewTextArea == null) {
                     previewTextArea = new GUIStyle(GUI.skin.box);
@@ -84,11 +82,11 @@ namespace JesseStiller.PhLayerTool {
             */
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.LabelField("File", EditorStyles.boldLabel);
-            PhLayer.settings.className = ValidatedTextField("Class Name*", PhLayer.settings.className, "Layers");
+            PhLayer.settings.className = ValidatedTextField("Class Name", PhLayer.settings.className, "Layers");
             PhLayer.settings.appendDotGInFileName = RadioButtonsControl(new GUIContent("Filename Extension"), PhLayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
             EditorGUILayout.BeginHorizontal();
-            PhLayer.settings.outputDirectory = TextAreaWithDefault("Output Directory*", PhLayer.settings.outputDirectory, "Assets\\");
-            if(GUILayout.Button("Browse…", GUILayout.Width(70f), GUILayout.Height(22f))) {
+            PhLayer.settings.outputDirectory = DirectoryPathField("Output Directory", PhLayer.settings.outputDirectory);
+            if(GUILayout.Button("Browse…", GUILayout.Width(70f), GUILayout.Height(23f))) {
                 string chosenPath = EditorUtility.OpenFolderPanel("PhLayer", GetOutputDirectory(), string.Empty);
                 if(string.IsNullOrEmpty(chosenPath) == false) PhLayer.settings.outputDirectory = GetLocalPathFromAbsolutePath(chosenPath);
             }
@@ -112,14 +110,7 @@ namespace JesseStiller.PhLayerTool {
                 if(previewFoldout) expandWindowHeight = true;
                 PhLayer.SaveSettings();
             }
-
-            using(new EditorGUILayout.HorizontalScope()) {
-                GUILayout.FlexibleSpace();
-                EditorStyles.centeredGreyMiniLabel.richText = true;
-                GUILayout.Label("* Values in <i>italics</i> represent default values", EditorStyles.centeredGreyMiniLabel);
-                EditorStyles.centeredGreyMiniLabel.richText = false;
-            }
-
+            
             using(EditorGUI.ChangeCheckScope change = new EditorGUI.ChangeCheckScope()) {
                 previewFoldout = EditorGUILayout.Foldout(previewFoldout, "Preview", true);
                 if(change.changed && previewFoldout) {
@@ -251,21 +242,24 @@ namespace JesseStiller.PhLayerTool {
 
             int controlId = GUIUtility.GetControlID(validatedTextFieldId, FocusType.Keyboard, r);
             bool changed = false;
-            switch(Event.current.GetTypeForControl(controlId)) {
-                case EventType.KeyDown:
-                    if(Event.current.character == 0) break; // Allow backspace, delete, etc
-                    if(Utilities.IsCharValidForIdentifier(Event.current.character)) break;
-                    Event.current.Use();
-                    break;
-                case EventType.ExecuteCommand:
-                    // HACK: This changes the clipboard value, ideally it shouldn't with more complicated logic, but is it worth it?
-                    if(Event.current.commandName == "Paste") {
-                        EditorGUIUtility.systemCopyBuffer = Utilities.ConvertToValidIdentifier(EditorGUIUtility.systemCopyBuffer);
-                    }
-                    break;
-            }
 
             Rect controlRect = EditorGUI.PrefixLabel(r, controlId, new GUIContent(label));
+
+            if(GUIUtility.keyboardControl == controlId) {
+                switch(Event.current.GetTypeForControl(controlId)) {
+                    case EventType.KeyDown:
+                        if(Event.current.character == 0) break; // Allow backspace, delete, etc
+                        if(Utilities.IsCharValidForIdentifier(Event.current.character)) break;
+                        Event.current.Use();
+                        break;
+                    case EventType.ExecuteCommand:
+                        // HACK: This changes the clipboard value, ideally it shouldn't with more complicated logic, but is it worth it?
+                        if(Event.current.commandName == "Paste") {
+                            EditorGUIUtility.systemCopyBuffer = Utilities.ConvertToValidIdentifier(EditorGUIUtility.systemCopyBuffer);
+                        }
+                        break;
+                }
+            }
 
             //EditorGUI.RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField
             object[] parameters = DoTextFieldParameters((TextEditor)recycledEditorField.GetValue(null), controlId, controlRect, text, GUI.skin.textField, null, changed, false, false, false);
@@ -278,47 +272,50 @@ namespace JesseStiller.PhLayerTool {
             return text;
         }
 
-        internal static string FilePathTextField(string label, string text, string defaultValue = "") {
-            Rect r = EditorGUILayout.GetControlRect();
+        private static readonly int directoryPathFieldId = "PhLayerDirectoryPathField".GetHashCode();
+        internal static string DirectoryPathField(string label, string text) {
+            Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(29f));
 
-            int controlId = GUIUtility.GetControlID(validatedTextFieldId, FocusType.Keyboard, r);
+            int controlId = GUIUtility.GetControlID(directoryPathFieldId, FocusType.Keyboard, r);
             bool changed = false;
-            switch(Event.current.GetTypeForControl(controlId)) {
-                case EventType.KeyDown:
-                    if(Event.current.character == 0) break; // Allow backspace, delete, etc
-                    if(Utilities.IsCharValidForIdentifier(Event.current.character)) break;
-                    Event.current.Use();
-                    break;
-                case EventType.ExecuteCommand:
-                    // HACK: This changes the clipboard value, ideally it shouldn't with more complicated logic, but is it worth it?
-                    if(Event.current.commandName == "Paste") {
-                        EditorGUIUtility.systemCopyBuffer = Utilities.ConvertToValidIdentifier(EditorGUIUtility.systemCopyBuffer);
-                    }
-                    break;
-            }
+            TextEditor textEditor = (TextEditor)recycledEditorField.GetValue(null);
 
             Rect controlRect = EditorGUI.PrefixLabel(r, controlId, new GUIContent(label));
 
-            //EditorGUI.RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField
-            object[] parameters = DoTextFieldParameters((TextEditor)recycledEditorField.GetValue(null), controlId, controlRect, text, GUI.skin.textField, null, changed, false, false, false);
-            text = (string)doTextFieldMethod.Invoke(null, parameters);
+            if(GUIUtility.keyboardControl == controlId) {
+                switch(Event.current.GetTypeForControl(controlId)) {
+                    case EventType.KeyDown:
+                        if(Event.current.character == 0) break; // Allow backspace, delete, etc
+                        if(Utilities.IsDirectoryPathCharacterValid(Event.current.character)) break;
 
-            if(Event.current.type == EventType.Repaint && string.IsNullOrEmpty(defaultValue) == false && string.IsNullOrEmpty(text)) {
-                Styles.greyItalicLabel.Draw(controlRect, defaultValue, false, false, false, false);
+                        Event.current.Use();
+
+                        break;
+                    case EventType.ExecuteCommand:
+                        // HACK: This changes the clipboard value, ideally it shouldn't with more complicated logic, but is it worth it?
+                        if(Event.current.commandName == "Paste") {
+                            EditorGUIUtility.systemCopyBuffer = Utilities.ConvertToValidDirectoryPath(EditorGUIUtility.systemCopyBuffer);
+                        }
+                        break;
+                }
             }
+
+            //EditorGUI.RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField
+            object[] parameters = DoTextFieldParameters(textEditor, controlId, controlRect, text, Styles.wordWrappedTextField, null, changed, false, false, false);
+            text = (string)doTextFieldMethod.Invoke(null, parameters);
 
             return text;
         }
 
         // This is just to make things seem less magic and for IDE compatibility.
         private static object[] DoTextFieldParameters(TextEditor editor, int controlId, Rect position, string text, GUIStyle style, string allowedLetters, bool changed, bool reset, bool multiline, bool passwordField) {
-            return new object[] { editor, controlId, position, text, style, allowedLetters, changed, reset, multiline, passwordField};
+            return new object[] { editor, controlId, position, text, style, allowedLetters, changed, reset, multiline, passwordField };
         }
 
         private static string TextAreaWithDefault(string label, string value, string defaultValue) {
             Rect controlRect = EditorGUILayout.GetControlRect(GUILayout.Height(29f));
             Rect textAreaRect = EditorGUI.PrefixLabel(controlRect, new GUIContent(label));
-            string newValue = EditorGUI.TextArea(textAreaRect, value, Styles.wordWrappedTextArea);
+            string newValue = EditorGUI.TextArea(textAreaRect, value, Styles.wordWrappedTextField);
 
             if(string.IsNullOrEmpty(value)) {
                 if(Event.current.type == EventType.Repaint) {

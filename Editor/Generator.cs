@@ -50,6 +50,10 @@ namespace JesseStiller.PhLayerTool {
 
             string localFilePath = GetLocalPath();
             string absoluteFilePath = GetAbsolutePathFromLocalPath(localFilePath);
+            string absoluteDirectory = Path.GetDirectoryName(absoluteFilePath);
+            if(Directory.Exists(absoluteDirectory) == false) {
+                Directory.CreateDirectory(absoluteDirectory);
+            }
 
             // Make sure that we are writing to one of our own files if already present, and not something created by a anyone/anything else.
             if(File.Exists(absoluteFilePath)) {
@@ -67,7 +71,7 @@ namespace JesseStiller.PhLayerTool {
 
         internal static string GetLocalPath() {
             string className = string.IsNullOrEmpty(PhLayer.settings.className) ? "Layers" : PhLayer.settings.className;
-            string outputDirectory = string.IsNullOrEmpty(PhLayer.settings.outputDirectory) ? "Assets\\" : PhLayer.settings.outputDirectory;
+            string outputDirectory = Path.Combine("Assets" , PhLayer.settings.outputDirectory);
             string extension = PhLayer.settings.appendDotGInFileName ? ".g.cs" : ".cs";
             return Path.Combine(outputDirectory, className + extension);
         }
