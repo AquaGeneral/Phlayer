@@ -124,6 +124,7 @@ namespace JesseStiller.PhLayerTool {
                 GUI.enabled = !PhLayer.settings.Equals(defaultSettings);
                 if(GUILayout.Button("Restore Defaults", GUILayout.Width(120f), GUILayout.Height(22f))) {
                     PhLayer.settings = new Settings();
+                    PhLayer.SaveSettings();
                     generatorPreviewText = Generator.GetPreview();
                 }
                 GUI.enabled = true;
