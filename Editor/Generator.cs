@@ -16,9 +16,8 @@ namespace JesseStiller.PhLayerTool {
         private const string windowsLineEnding = "\r\n";
         private const string unixLineEnding = "\n";
         private const string header = "// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension.";
-        private const string previewHeader = "// Auto-generated.";
-        private static StringBuilder sb = new StringBuilder(512);
-        private static StringBuilder auxSB = new StringBuilder(32); // An auxillary string builder
+        private static StringBuilder sb = new StringBuilder(1024);
+        private static StringBuilder auxSB = new StringBuilder(64); // An auxillary string builder
         private static readonly string[] indentatorsArray = { " ", "  ", "   ", "    ", "\t" };
         private static byte indentation;
 
@@ -26,9 +25,8 @@ namespace JesseStiller.PhLayerTool {
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
             foreach(string str in importedAssets) {
-                if(str.Equals("ProjectSettings/TagManager.asset", StringComparison.OrdinalIgnoreCase)) {
-                    GenerateAndSave();
-                }
+                if(str.Equals("ProjectSettings/TagManager.asset", StringComparison.OrdinalIgnoreCase) == false) continue;
+                GenerateAndSave();
             }
         }
 
@@ -47,7 +45,7 @@ namespace JesseStiller.PhLayerTool {
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
                 layerNames.Add(LayerMask.LayerToName(i));
             }
-            Generate(preview: true);
+            Generate(preview: false);
 
             string localFilePath = GetLocalPath();
             string absoluteFilePath = GetAbsolutePathFromLocalPath(localFilePath);
@@ -66,7 +64,15 @@ namespace JesseStiller.PhLayerTool {
                     }
                 }
             }
-            File.WriteAllText(absoluteFilePath, sb.ToString());
+
+            bool fileWritten = false;
+            try {
+                File.WriteAllText(absoluteFilePath, sb.ToString());
+                fileWritten = true;
+            } catch(Exception e) {
+                Debug.LogError(string.Format("PhLayer wasn't able to save {0} for the following reason:\n{1}", absoluteFilePath, e.ToString()));
+            }
+            if(fileWritten == false) return;
             AssetDatabase.ImportAsset(localFilePath, ImportAssetOptions.ForceUpdate);
         }
 
@@ -89,9 +95,8 @@ namespace JesseStiller.PhLayerTool {
             sb.Length = 0;
             indentation = 0;
 
-            if(PhLayer.settings.includeHeader) {
-                if(preview) AppendLine(previewHeader);
-                else        AppendLine(header);
+            if(preview == false) { 
+                AppendLine(header);
             }
 
             // Namespace
@@ -104,6 +109,8 @@ namespace JesseStiller.PhLayerTool {
             AppendLineWithCurlyBracket("public static class " + className);
 
             CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+
+            HashSet<string> layers = new HashSet<string>();
 
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
                 string layerName = LayerMask.LayerToName(i);
@@ -159,6 +166,19 @@ namespace JesseStiller.PhLayerTool {
                     }
                 }
 
+                /**
+                * Make sure there aren't any duplicates.
+                * The while loop can only happen up to ~23 times in the worse case (since there are 8 built-in layers which can't be modified)
+                */
+                if(layers.Contains(auxSB.ToString())) {
+                    int count = 2;
+                    while(layers.Contains(auxSB.ToString() + count.ToString())) {
+                        count++;
+                    }
+                    auxSB.Append(count);
+                }
+                layers.Add(auxSB.ToString());
+
                 AppendLine(string.Format("public const int {0} = {1};", auxSB.ToString(), i));
             }
 
@@ -195,7 +215,7 @@ namespace JesseStiller.PhLayerTool {
                 AppendLine("");
             }
 
-            Indent();
+            indentation++;
         }
 
         private static void Append(string s) {
@@ -214,15 +234,6 @@ namespace JesseStiller.PhLayerTool {
             } else {
                 sb.Append(unixLineEnding);
             }
-        }
-
-        private static void Indent() {
-            indentation++;
-        }
-
-        private static void Unindent() {
-            indentation--;
-            Debug.Assert(indentation >= 0);
         }
 
         /// <summary>

@@ -97,7 +97,6 @@ namespace JesseStiller.PhLayerTool {
             PhLayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, Contents.curlyBracketPreference) == 1;
             PhLayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl("Escape Character", PhLayer.settings.escapeIdentifiersWithAtSymbol ? 1 : 0, Contents.escapeIdentifierOptions) == 1;
             PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
-            PhLayer.settings.includeHeader = EditorGUILayout.Toggle("Include Header", PhLayer.settings.includeHeader);
             
             if(EditorGUI.EndChangeCheck()) {
                 generatorPreviewText = Generator.GetPreview();
@@ -125,6 +124,7 @@ namespace JesseStiller.PhLayerTool {
                 GUI.enabled = !PhLayer.settings.Equals(defaultSettings);
                 if(GUILayout.Button("Restore Defaults", GUILayout.Width(120f), GUILayout.Height(22f))) {
                     PhLayer.settings = new Settings();
+                    generatorPreviewText = Generator.GetPreview();
                 }
                 GUI.enabled = true;
             }

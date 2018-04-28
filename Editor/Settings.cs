@@ -5,16 +5,12 @@ using System.Reflection;
 namespace JesseStiller.PhLayerTool {
     [Serializable]
     internal class Settings {
-        private static readonly FieldInfo[] fields;
-        static Settings() {
-            fields = typeof(Settings).GetFields(BindingFlags.Instance | BindingFlags.Public);
-        }
+        private static readonly FieldInfo[] fields = typeof(Settings).GetFields(BindingFlags.Instance | BindingFlags.Public);
 
         /**
         * The initial values also count as the default values (as per pressing "Restore Defaults").
         * The coding convention defaults simply match Microsoft's preferences used in MSDN documentation.
         */
-        public bool includeHeader = true;
         public Casing casing = Casing.Pascal;
         public bool skipBuiltinLayers = false;
         public string outputDirectory = "";
