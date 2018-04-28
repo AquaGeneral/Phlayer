@@ -1,21 +1,13 @@
 ﻿using System;
-using System.Globalization;
 using System.Reflection;
-using System.Text;
 using UnityEditor;
 using UnityEngine;
-
-/**
-* TODO:
-* - Implement all casings
-*/
 
 namespace JesseStiller.PhLayerTool {
     public class PreferencesPane {
         private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType("UnityEditor.PreferencesWindow");
         private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly FieldInfo recycledEditorField = typeof(EditorGUI).GetField("s_RecycledEditor", BindingFlags.NonPublic | BindingFlags.Static);
-        private static readonly int radioButtonsControlHash = "PhLayer.RadioButtons".GetHashCode();
         private static readonly Settings defaultSettings = new Settings();
 
         private static string generatorPreviewText;
@@ -43,7 +35,7 @@ namespace JesseStiller.PhLayerTool {
                 }
                 if(radioButton == null) {
                     radioButton = new GUIStyle(EditorStyles.radioButton);
-                    radioButton.padding = new RectOffset(radioButton.padding.left, 2, 0, 0);
+                    radioButton.padding = new RectOffset(radioButton.padding.left, 0, 2, 0);
                 }
             }
         }
@@ -52,7 +44,7 @@ namespace JesseStiller.PhLayerTool {
             internal static readonly GUIContent[] fileNameExtensions = new GUIContent[] { new GUIContent(".cs"), new GUIContent(".g.cs") };
             internal static readonly GUIContent[] curlyBracketPreference = new GUIContent[] { new GUIContent("Same Line"), new GUIContent("New Line") };
             internal static readonly GUIContent[] lineEndings = new GUIContent[] { new GUIContent("Windows-style"), new GUIContent("Unix-style") };
-            internal static readonly GUIContent[] escapeIdentifierOptions = new GUIContent[] { new GUIContent("_ (Underscore"), new GUIContent("@ (At Symbol)")};
+            internal static readonly GUIContent[] escapeIdentifierOptions = new GUIContent[] { new GUIContent("Underscore (_)"), new GUIContent("At symbol (@)")};
             internal static readonly string[] casing = new string[] {
                 "Leave As-Is", "Camel", "Pascal", "Caps Lock", "Caps Lock (Underscored)",
             };
@@ -84,7 +76,7 @@ namespace JesseStiller.PhLayerTool {
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.LabelField("File", EditorStyles.boldLabel);
             PhLayer.settings.className = ValidatedTextField("Class Name", PhLayer.settings.className, true, "Layers");
-            PhLayer.settings.appendDotGInFileName = RadioButtonsControl(new GUIContent("Filename Extension"), PhLayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
+            PhLayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", PhLayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
             EditorGUILayout.BeginHorizontal();
             PhLayer.settings.outputDirectory = DirectoryPathField("Output Directory", PhLayer.settings.outputDirectory);
             if(GUILayout.Button("Browse…", GUILayout.Width(70f), GUILayout.Height(23f))) {
@@ -101,12 +93,12 @@ namespace JesseStiller.PhLayerTool {
             PhLayer.settings.classNamespace = ValidatedTextField("Class Namespace", PhLayer.settings.classNamespace, true);
             PhLayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)PhLayer.settings.casing, Contents.casing);
             PhLayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.EnumPopup("Indentation Style", PhLayer.settings.indentationStyle);
-            PhLayer.settings.lineEndings = (LineEndings)RadioButtonsControl(new GUIContent("Line Endings"), (int)PhLayer.settings.lineEndings, Contents.lineEndings);
-            PhLayer.settings.curlyBracketOnNewLine = RadioButtonsControl(new GUIContent("Curly Brackets"), PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, Contents.curlyBracketPreference) == 1;
+            PhLayer.settings.lineEndings = (LineEndings)RadioButtonsControl("Line Endings", (int)PhLayer.settings.lineEndings, Contents.lineEndings);
+            PhLayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, Contents.curlyBracketPreference) == 1;
+            PhLayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl("Escape Character", PhLayer.settings.escapeIdentifiersWithAtSymbol ? 1 : 0, Contents.escapeIdentifierOptions) == 1;
             PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
             PhLayer.settings.includeHeader = EditorGUILayout.Toggle("Include Header", PhLayer.settings.includeHeader);
-            PhLayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl(new GUIContent("Identifier Escape Character"), PhLayer.settings.escapeIdentifiersWithAtSymbol ? 1 : 0, Contents.escapeIdentifierOptions) == 1;
-
+            
             if(EditorGUI.EndChangeCheck()) {
                 generatorPreviewText = Generator.GetPreview();
                 if(previewFoldout) expandWindowHeight = true;
@@ -156,86 +148,10 @@ namespace JesseStiller.PhLayerTool {
             }
         }
 
-        /// <summary>
-        /// A radio button control that doesn't cutoff certain characters and with intelligent spacing between options.
-        /// </summary>
-        /// <returns>The index of the selected radio button.</returns>
-        internal static int RadioButtonsControl(GUIContent labelContent, int selectedIndex, GUIContent[] radioButtonOptions) {
+        private static int RadioButtonsControl(string label, int selectedIndex, GUIContent[] options) {
             Rect controlRect = EditorGUILayout.GetControlRect();
-            Rect toolbarRect = EditorGUI.PrefixLabel(controlRect, labelContent);
-
-            if(radioButtonOptions.Length == 0) return selectedIndex;
-
-            int toolbarOptionsCount = radioButtonOptions.Length;
-            float[] widths = new float[toolbarOptionsCount];
-            bool useEqualSpacing = true;
-            float totalContentsWidths = 0f;
-            float maxWidthPerContent = toolbarRect.width / toolbarOptionsCount;
-
-            // Calculate widths of the options and check if the options can be displayed with equal width without anything being cutoff.
-            for(int i = 0; i < toolbarOptionsCount; i++) {
-                widths[i] = EditorStyles.radioButton.CalcSize(radioButtonOptions[i]).x;
-                totalContentsWidths += widths[i];
-
-                // If the width of the GUIContent extends the max width per content while mantaining equal spacing then equal spacing cannot be maintained.
-                if(useEqualSpacing && widths[i] > maxWidthPerContent) {
-                    useEqualSpacing = false;
-                }
-            }
-
-            float gapPerOption = (toolbarRect.width - totalContentsWidths) / (toolbarOptionsCount - 1);
-
-            // Find the selected option
-            float optionOffset = toolbarRect.x;
-            int newSelectedIndex = -1;
-            for(int i = 0; i < toolbarOptionsCount; i++) {
-                float width = useEqualSpacing ? maxWidthPerContent : gapPerOption + widths[i];
-                if(Event.current.mousePosition.x >= optionOffset && Event.current.mousePosition.x <= optionOffset + width) {
-                    newSelectedIndex = i;
-                }
-                optionOffset += width;
-            }
-
-            int controlId = GUIUtility.GetControlID(radioButtonsControlHash, FocusType.Passive, controlRect);
-            switch(Event.current.GetTypeForControl(controlId)) {
-                case EventType.MouseDown:
-                    if(toolbarRect.Contains(Event.current.mousePosition) == false) break;
-                    GUIUtility.hotControl = controlId;
-                    Event.current.Use();
-                    break;
-                case EventType.MouseUp:
-                    if(GUIUtility.hotControl != controlId) break;
-                    GUIUtility.hotControl = 0;
-                    Event.current.Use();
-                    GUI.changed = true;
-
-                    if(newSelectedIndex == -1) return 0;
-
-                    return newSelectedIndex;
-                case EventType.MouseDrag:
-                    if(GUIUtility.hotControl == controlId) Event.current.Use();
-                    break;
-                case EventType.Repaint:
-                    float xOffset = toolbarRect.x;
-                    for(int i = 0; i < toolbarOptionsCount; i++) {
-                        Styles.radioButton.Draw(
-                            position: new Rect(xOffset, toolbarRect.y - 1, widths[i], toolbarRect.height),
-                            content: radioButtonOptions[i],
-                            isHover: i == newSelectedIndex && (GUI.enabled || controlId == GUIUtility.hotControl) && (controlId == GUIUtility.hotControl || GUIUtility.hotControl == 0),
-                            isActive: GUIUtility.hotControl == controlId && GUI.enabled,
-                            on: i == selectedIndex,
-                            hasKeyboardFocus: false);
-
-                        if(useEqualSpacing) {
-                            xOffset += maxWidthPerContent;
-                        } else {
-                            xOffset += gapPerOption + widths[i];
-                        }
-                    }
-                    break;
-            }
-
-            return selectedIndex;
+            Rect toolbarRect = EditorGUI.PrefixLabel(controlRect, new GUIContent(label));
+            return GUI.Toolbar(toolbarRect, selectedIndex, options, Styles.radioButton);
         }
 
         private static readonly int validatedTextFieldId = "PhLayerValidatedTextField".GetHashCode();

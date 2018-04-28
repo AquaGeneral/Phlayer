@@ -12,7 +12,7 @@ namespace JesseStiller.PhLayerTool {
 
         /**
         * The initial values also count as the default values (as per pressing "Restore Defaults").
-        * The defaults simply match Microsoft's preferences used on MSDN documentation.
+        * The coding convention defaults simply match Microsoft's preferences used in MSDN documentation.
         */
         public bool includeHeader = true;
         public Casing casing = Casing.Pascal;
@@ -28,7 +28,6 @@ namespace JesseStiller.PhLayerTool {
 
         // Do the rest via reflection so we don't have to update this code every time we update the settings.
         public override bool Equals(object obj) {
-            
             foreach(FieldInfo f in fields) {
                 if(f.GetValue(this).Equals(f.GetValue(obj))) continue;
                 return false;

@@ -107,42 +107,50 @@ namespace JesseStiller.PhLayerTool {
 
             for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
                 string layerName = LayerMask.LayerToName(i);
-                
                 if(IsNullOrWhitespace(layerName)) continue;
 
-                for(int c = 0; c < layerName.Length; c++) {
-                    //auxSB.Append();
-                }
+                auxSB.Length = 0;
 
-                layerName = layerName.Replace(" ", "");
-                string newLayerName;
-                if(char.IsDigit(layerName[0])) {
-                    newLayerName = "_";
+                if(PhLayer.settings.casing == Casing.LeaveAsIs) {
+                    auxSB.Append(Utilities.ConvertToValidIdentifier(layerName));
                 } else {
-                    newLayerName = "";
-                }
+                    bool newWord = false;
+                    for(int c = 0; c < layerName.Length; c++) {
+                        if(layerName[c] == ' ') {
+                            if(PhLayer.settings.casing == Casing.CapsLockWithUnderscores) {
+                                auxSB.Append('_');
+                            } else {
+                                newWord = true;
+                            }
+                        } else if(Utilities.IsCharValidForIdentifier(layerName[c]) == false) {
+                            auxSB.Append('_');
+                        } else if(newWord) {
+                            auxSB.Append(char.ToUpperInvariant(layerName[c]));
+                            newWord = false;
+                        } else if(PhLayer.settings.casing == Casing.CapsLock || PhLayer.settings.casing == Casing.CapsLockWithUnderscores) {
+                            auxSB.Append(char.ToUpperInvariant(layerName[c]));
+                        } else {
+                            auxSB.Append(layerName[c]);
+                        }
+                    }
 
-                for(int c = 0; c < layerName.Length; c++) {
-                    if(layerName[c] == ' ' || Utilities.IsCharValidForIdentifier(layerName[c]) == false) {
-                        newLayerName += '_';
-                    } else {
-                        newLayerName += layerName[c];
+                    if(PhLayer.settings.casing == Casing.Camel) {
+                        for(int c = 0; c < auxSB.Length; c++) {
+                            if(char.IsLetter(auxSB[c]) == false) continue;
+                            auxSB[c] = char.ToLowerInvariant(auxSB[c]);
+                            break;
+                        }
                     }
                 }
 
-                switch(PhLayer.settings.casing) {
-                    case Casing.Camel:
-                        newLayerName = char.ToLowerInvariant(newLayerName[0]) + newLayerName.Substring(1);
-                        break;
-                    case Casing.Pascal:
-                        throw new NotImplementedException();
-                    case Casing.CapsLock:
-                        newLayerName = newLayerName.ToUpperInvariant();
-                        break;
-                    case Casing.CapsLockWithUnderscores:
-                        break;
+                if(char.IsDigit(auxSB[0])) {
+                    auxSB.Insert(0, '_');
                 }
 
+                if(char.IsDigit(auxSB[0])) {
+                    auxSB.Insert(0, "_");
+                }
+                
                 if(codeProvider.IsValidIdentifier(auxSB.ToString()) == false) {
                     if(PhLayer.settings.escapeIdentifiersWithAtSymbol) {
                         auxSB.Insert(0, '@');
@@ -151,7 +159,7 @@ namespace JesseStiller.PhLayerTool {
                     }
                 }
 
-                AppendLine(string.Format("public const int {0} = {1};", newLayerName, i));
+                AppendLine(string.Format("public const int {0} = {1};", auxSB.ToString(), i));
             }
 
             // Write all ending curly brakets
@@ -164,7 +172,7 @@ namespace JesseStiller.PhLayerTool {
         private static bool IsNullOrWhitespace(string value) {
             if(value == null) return true;
             for(int i = 0; i < value.Length; i++) {
-                if(char.IsWhiteSpace(value[i])) return false;
+                if(!char.IsWhiteSpace(value[i])) return false;
             }
             return true;
         }
