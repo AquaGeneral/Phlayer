@@ -16,11 +16,10 @@ namespace JesseStiller.PhLayerTool {
         private const string windowsLineEnding = "\r\n";
         private const string unixLineEnding = "\n";
         private const string header = "// Auto-generated based on the TagManager settings by Jesse Stiller's PhLayer Unity extension.";
-        private static StringBuilder sb = new StringBuilder(1024);
-        private static StringBuilder auxSB = new StringBuilder(64); // An auxillary string builder
+        private static readonly StringBuilder sb = new StringBuilder(1024);
+        private static readonly StringBuilder auxSB = new StringBuilder(64); // An auxillary string builder
         private static readonly string[] indentatorsArray = { " ", "  ", "   ", "    ", "\t" };
         private static byte indentation;
-
         private static string indentator;
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
@@ -41,10 +40,6 @@ namespace JesseStiller.PhLayerTool {
         internal static void GenerateAndSave() {
             PhLayer.InitializeSettings();
 
-            List<string> layerNames = new List<string>(32);
-            for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
-                layerNames.Add(LayerMask.LayerToName(i));
-            }
             Generate(preview: false);
 
             string localFilePath = GetLocalPath();
@@ -57,7 +52,7 @@ namespace JesseStiller.PhLayerTool {
             // Make sure that we are writing to one of our own files if already present, and not something created by a anyone/anything else.
             if(File.Exists(absoluteFilePath)) {
                 using(StreamReader sr = new StreamReader(absoluteFilePath)) {
-                    if(sr.ReadLine().StartsWith(header, StringComparison.Ordinal) == false) {
+                    if(sr.Peek() != -1 && sr.ReadLine().StartsWith(header, StringComparison.Ordinal) == false) {
                         bool overwriteAnyway = EditorUtility.DisplayDialog("PhLayer", "PhLayer was going to update the generated layers physics layers class, but it is going to overwrite a non-matching file at:\n" +
                             absoluteFilePath, "Overwrite anyway", "Don't overwrite");
                         if(overwriteAnyway == false) return;
@@ -219,8 +214,6 @@ namespace JesseStiller.PhLayerTool {
         }
 
         private static void Append(string s) {
-            Debug.Assert(indentation < 10);
-
             for(byte i = 0; i < indentation; i++) {
                 sb.Append(indentator);
             }
@@ -242,7 +235,7 @@ namespace JesseStiller.PhLayerTool {
         /// <param name="localPath">The path contained within the "Assets" direction. Eg: "Models/Model.fbx"</param>
         /// <example>Passing "Models/Model.fbx" will return "C:/Users/John/MyProject/Assets/Models/Model.fbx"</example>
         /// <returns>Returns the absolute/full system path from the local "Assets" inclusive path.</returns>
-        internal static string GetAbsolutePathFromLocalPath(string localPath) {
+        private static string GetAbsolutePathFromLocalPath(string localPath) {
             return Application.dataPath.Remove(Application.dataPath.Length - 6, 6) + localPath;
         }
     }

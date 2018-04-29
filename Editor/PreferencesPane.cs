@@ -41,12 +41,12 @@ namespace JesseStiller.PhLayerTool {
         }
 
         private static class Contents {
-            internal static readonly GUIContent[] fileNameExtensions = new GUIContent[] { new GUIContent(".cs"), new GUIContent(".g.cs") };
-            internal static readonly GUIContent[] curlyBracketPreference = new GUIContent[] { new GUIContent("Same Line"), new GUIContent("New Line") };
-            internal static readonly GUIContent[] lineEndings = new GUIContent[] { new GUIContent("Windows-style"), new GUIContent("Unix-style") };
-            internal static readonly GUIContent[] escapeIdentifierOptions = new GUIContent[] { new GUIContent("Underscore (_)"), new GUIContent("At symbol (@)")};
-            internal static readonly string[] casing = new string[] {
-                "Leave As-Is", "Camel", "Pascal", "Caps Lock", "Caps Lock (Underscored)",
+            internal static readonly GUIContent[] fileNameExtensions = { new GUIContent(".cs"), new GUIContent(".g.cs") };
+            internal static readonly GUIContent[] curlyBracketPreference = { new GUIContent("Same Line"), new GUIContent("New Line") };
+            internal static readonly GUIContent[] lineEndings = { new GUIContent("Windows-style"), new GUIContent("Unix-style") };
+            internal static readonly GUIContent[] escapeIdentifierOptions = { new GUIContent("Underscore (_)"), new GUIContent("At symbol (@)")};
+            internal static readonly string[] casing = {
+                "Leave As-Is", "Camel", "Pascal", "Caps Lock", "Caps Lock (Underscored)"
             };
         }
 
@@ -156,12 +156,10 @@ namespace JesseStiller.PhLayerTool {
         }
 
         private static readonly int validatedTextFieldId = "PhLayerValidatedTextField".GetHashCode();
-        internal static string ValidatedTextField(string label, string text, bool allowDots, string defaultValue = "") {
+        private static string ValidatedTextField(string label, string text, bool allowDots, string defaultValue = "") {
             Rect r = EditorGUILayout.GetControlRect();
 
             int controlId = GUIUtility.GetControlID(validatedTextFieldId, FocusType.Keyboard, r);
-            bool changed = false;
-
             Rect controlRect = EditorGUI.PrefixLabel(r, controlId, new GUIContent(label));
             Event current = Event.current;
             if(GUIUtility.keyboardControl == controlId) {
@@ -181,7 +179,7 @@ namespace JesseStiller.PhLayerTool {
                 }
             }
 
-            text = DoTextField(controlId, controlRect, text, GUI.skin.textField, null, changed, false, false, false);
+            text = DoTextField(controlId, controlRect, text, GUI.skin.textField, null, false, false, false, false);
 
             if(current.type == EventType.Repaint && string.IsNullOrEmpty(defaultValue) == false && string.IsNullOrEmpty(text)) {
                 Styles.greyItalicLabel.Draw(controlRect, defaultValue, false, false, false, false);
@@ -191,12 +189,10 @@ namespace JesseStiller.PhLayerTool {
         }
 
         private static readonly int directoryPathFieldId = "PhLayerDirectoryPathField".GetHashCode();
-        internal static string DirectoryPathField(string label, string text) {
+        private static string DirectoryPathField(string label, string text) {
             Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(29f));
 
             int controlId = GUIUtility.GetControlID(directoryPathFieldId, FocusType.Keyboard, r);
-            bool changed = false;
-
             Rect controlRect = EditorGUI.PrefixLabel(r, controlId, new GUIContent(label));
             Event current = Event.current;
             if(GUIUtility.keyboardControl == controlId) {
@@ -217,30 +213,17 @@ namespace JesseStiller.PhLayerTool {
                 }
             }
 
-            text = DoTextField(controlId, controlRect, text, Styles.wordWrappedTextField, null, changed, false, false, false);
+            text = DoTextField(controlId, controlRect, text, Styles.wordWrappedTextField, null, false, false, false, false);
 
             return text;
         }
 
         private static string DoTextField(int controlId, Rect rect, string text, GUIStyle style, string allowedLetters, bool changed, bool reset, bool multiline, bool passwordField) {
-            object[] parameters = new object[] { (TextEditor)recycledEditorField.GetValue(null), controlId, rect, text, style, allowedLetters, changed, reset, multiline, passwordField };
+            object[] parameters = {(TextEditor)recycledEditorField.GetValue(null), controlId, rect, text, style, allowedLetters, changed, reset, multiline, passwordField };
             return (string)doTextFieldMethod.Invoke(null, parameters);
         }
 
-        private static string TextAreaWithDefault(string label, string value, string defaultValue) {
-            Rect controlRect = EditorGUILayout.GetControlRect(GUILayout.Height(29f));
-            Rect textAreaRect = EditorGUI.PrefixLabel(controlRect, new GUIContent(label));
-            string newValue = EditorGUI.TextArea(textAreaRect, value, Styles.wordWrappedTextField);
-
-            if(string.IsNullOrEmpty(value)) {
-                if(Event.current.type == EventType.Repaint) {
-                    Styles.greyItalicLabel.Draw(textAreaRect, defaultValue, false, false, false, false);
-                }
-            }
-            return newValue;
-        }
-
-        internal static string GetLocalPathFromAbsolutePath(string absolutePath) {
+        private static string GetLocalPathFromAbsolutePath(string absolutePath) {
             int indexOfAssets = absolutePath.IndexOf("Assets", StringComparison.OrdinalIgnoreCase);
 
             if(indexOfAssets == -1) {

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -9,7 +8,7 @@ namespace JesseStiller.PhLayerTool {
         private const int maxSearchLineCount = 12;
 
         public static string mainDirectory;
-        public static string settingsPath;
+        private static string settingsPath;
         public static SettingsError errorState;
         public static Settings settings;
         
@@ -18,14 +17,13 @@ namespace JesseStiller.PhLayerTool {
 
             errorState = SettingsError.None;
 
-            int lineCount;
             int directoryCount = 0;
             string line;
             foreach(string phLayerDirectory in Directory.GetDirectories(Application.dataPath, "*PhLayer", SearchOption.AllDirectories)) {
                 directoryCount++;
                 foreach(string filePath in Directory.GetFiles(phLayerDirectory, "*.cs", SearchOption.AllDirectories)) {
                     using(StreamReader sr = new StreamReader(filePath)) {
-                        lineCount = 0;
+                        int lineCount = 0;
                         while((line = sr.ReadLine()) != null) {
                             if(line.StartsWith("namespace JesseStiller.PhLayerTool {", StringComparison.Ordinal)) {
                                 mainDirectory = phLayerDirectory;
