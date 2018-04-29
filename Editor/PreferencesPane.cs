@@ -141,14 +141,6 @@ namespace JesseStiller.PhLayerTool {
             }
         }
 
-        private static string GetOutputDirectory() {
-            if(string.IsNullOrEmpty(PhLayer.settings.outputDirectory)) {
-                return GetLocalPathFromAbsolutePath(PhLayer.mainDirectory);
-            } else {
-                return PhLayer.settings.outputDirectory;
-            }
-        }
-
         private static int RadioButtonsControl(string label, int selectedIndex, GUIContent[] options) {
             Rect controlRect = EditorGUILayout.GetControlRect();
             Rect toolbarRect = EditorGUI.PrefixLabel(controlRect, new GUIContent(label));
@@ -158,7 +150,6 @@ namespace JesseStiller.PhLayerTool {
         private static readonly int validatedTextFieldId = "PhLayerValidatedTextField".GetHashCode();
         private static string ValidatedTextField(string label, string text, bool allowDots, string defaultValue = "") {
             Rect r = EditorGUILayout.GetControlRect();
-
             int controlId = GUIUtility.GetControlID(validatedTextFieldId, FocusType.Keyboard, r);
             Rect controlRect = EditorGUI.PrefixLabel(r, controlId, new GUIContent(label));
             Event current = Event.current;
@@ -191,7 +182,6 @@ namespace JesseStiller.PhLayerTool {
         private static readonly int directoryPathFieldId = "PhLayerDirectoryPathField".GetHashCode();
         private static string DirectoryPathField(string label, string text) {
             Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(29f));
-
             int controlId = GUIUtility.GetControlID(directoryPathFieldId, FocusType.Keyboard, r);
             Rect controlRect = EditorGUI.PrefixLabel(r, controlId, new GUIContent(label));
             Event current = Event.current;
@@ -221,6 +211,14 @@ namespace JesseStiller.PhLayerTool {
         private static string DoTextField(int controlId, Rect rect, string text, GUIStyle style, string allowedLetters, bool changed, bool reset, bool multiline, bool passwordField) {
             object[] parameters = {(TextEditor)recycledEditorField.GetValue(null), controlId, rect, text, style, allowedLetters, changed, reset, multiline, passwordField };
             return (string)doTextFieldMethod.Invoke(null, parameters);
+        }
+
+        private static string GetOutputDirectory() {
+            if(string.IsNullOrEmpty(PhLayer.settings.outputDirectory)) {
+                return GetLocalPathFromAbsolutePath(PhLayer.mainDirectory);
+            } else {
+                return PhLayer.settings.outputDirectory;
+            }
         }
 
         private static string GetLocalPathFromAbsolutePath(string absolutePath) {
