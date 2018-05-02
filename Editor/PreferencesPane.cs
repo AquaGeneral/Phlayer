@@ -46,7 +46,7 @@ namespace JesseStiller.PhLayerTool {
             internal static readonly GUIContent[] lineEndings = { new GUIContent("Windows-style"), new GUIContent("Unix-style") };
             internal static readonly GUIContent[] escapeIdentifierOptions = { new GUIContent("At symbol (@)"), new GUIContent("Underscore (_)") };
             internal static readonly string[] casing = {
-                "Leave as-is", "Camel", "Pascal", "Caps Lock", "Caps Lock (underscored)"
+                "Leave as-is", "Camel", "Pascal", "Caps Lock", "Caps Lock (underscored spaces)"
             };
             internal static readonly GUIContent[] indentationStyles = {
                 new GUIContent("1-space"), new GUIContent("2-space"), new GUIContent("3-space"), new GUIContent("4-space"), new GUIContent("Tabs")
