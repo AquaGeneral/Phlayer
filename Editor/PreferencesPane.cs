@@ -4,20 +4,16 @@ using UnityEditor;
 using UnityEngine;
 
 namespace JesseStiller.PhLayerTool {
-    // TODO: Swap order of Curly Brackets and Escape Character options.
-    // TODO: Handle PhLayer folder being renamed.
-    // TODO: Unfocus text box when Restore Defaults is clicked.
-
     public class PreferencesPane {
         private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType("UnityEditor.PreferencesWindow");
         private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
-        private static readonly FieldInfo recycledEditorField = typeof(EditorGUI).GetField("s_RecycledEditor", BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly TextEditor recycledEditor = (TextEditor)typeof(EditorGUI).GetField("s_RecycledEditor", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
         private static readonly Settings defaultSettings = new Settings();
 
         private static string generatorPreviewText;
         private static bool previewFoldout = false;
         private static bool expandWindowHeight = false;
-        
+
         private static class Styles {
             internal static GUIStyle greyItalicLabel, wordWrappedTextField, previewTextArea, radioButton;
             internal static void Initialize() {
@@ -46,13 +42,15 @@ namespace JesseStiller.PhLayerTool {
 
         private static class Contents {
             internal static readonly GUIContent[] fileNameExtensions = { new GUIContent(".cs"), new GUIContent(".g.cs") };
-            internal static readonly GUIContent[] curlyBracketPreference = { new GUIContent("Same line"), new GUIContent("New line") };
+            internal static readonly GUIContent[] curlyBracketPreference = { new GUIContent("New line"), new GUIContent("Same line") };
             internal static readonly GUIContent[] lineEndings = { new GUIContent("Windows-style"), new GUIContent("Unix-style") };
-            internal static readonly GUIContent[] escapeIdentifierOptions = { new GUIContent("Underscore (_)"), new GUIContent("At symbol (@)")};
+            internal static readonly GUIContent[] escapeIdentifierOptions = { new GUIContent("At symbol (@)"), new GUIContent("Underscore (_)") };
             internal static readonly string[] casing = {
                 "Leave as-is", "Camel", "Pascal", "Caps Lock", "Caps Lock (underscored)"
             };
-            internal static readonly GUIContent[] indentationStyles = { new GUIContent("1-space"), new GUIContent("2-space"), new GUIContent("3-space"), new GUIContent("4-space"), new GUIContent("Tabs") };
+            internal static readonly GUIContent[] indentationStyles = {
+                new GUIContent("1-space"), new GUIContent("2-space"), new GUIContent("3-space"), new GUIContent("4-space"), new GUIContent("Tabs")
+            };
         }
 
         [PreferenceItem("PhLayer")]
@@ -60,17 +58,17 @@ namespace JesseStiller.PhLayerTool {
             Styles.Initialize();
             PhLayer.InitializeSettings();
 
-            if(string.IsNullOrEmpty(generatorPreviewText)) {
-                generatorPreviewText = Generator.GetPreview();
-            }
-
             switch(PhLayer.errorState) {
                 case SettingsError.NoDirectory:
                     EditorGUILayout.HelpBox("There is no valid directory named PhLayer - do not rename the directory that PhLayer is contained within.", MessageType.Error);
-                    break;
+                    return;
                 case SettingsError.NoValidFile:
                     EditorGUILayout.HelpBox("PhLayer somehow couldn't find the main location of its files. Make sure you did not modify PhLayer's code, nor directory names.", MessageType.Error);
-                    break;
+                    return;
+            }
+
+            if(string.IsNullOrEmpty(generatorPreviewText)) {
+                generatorPreviewText = Generator.GetPreview();
             }
 
             EditorGUIUtility.labelWidth = 140f;
@@ -86,7 +84,10 @@ namespace JesseStiller.PhLayerTool {
             PhLayer.settings.outputDirectory = DirectoryPathField("Output Directory", PhLayer.settings.outputDirectory);
             if(GUILayout.Button("Browse…", GUILayout.Width(80f), GUILayout.Height(22f))) {
                 string chosenPath = EditorUtility.OpenFolderPanel("Browse", GetOutputDirectory(), string.Empty);
-                if(string.IsNullOrEmpty(chosenPath) == false) PhLayer.settings.outputDirectory = GetLocalPathFromAbsolutePath(chosenPath);
+                if(string.IsNullOrEmpty(chosenPath) == false) {
+                    PhLayer.settings.outputDirectory = GetLocalPathFromAbsolutePath(chosenPath);
+                    GUIUtility.keyboardControl = 0;
+                }
             }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.LabelField("Output Filepath", Generator.GetLocalPath());
@@ -99,8 +100,8 @@ namespace JesseStiller.PhLayerTool {
             PhLayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)PhLayer.settings.casing, Contents.casing);
             PhLayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.Popup(new GUIContent("Indentation Style"), (int)PhLayer.settings.indentationStyle, Contents.indentationStyles);
             PhLayer.settings.lineEndings = (LineEndings)RadioButtonsControl("Line Endings", (int)PhLayer.settings.lineEndings, Contents.lineEndings);
-            PhLayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, Contents.curlyBracketPreference) == 1;
-            PhLayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl("Escape Character", PhLayer.settings.escapeIdentifiersWithAtSymbol ? 1 : 0, Contents.escapeIdentifierOptions) == 1;
+            PhLayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 0 : 1, Contents.curlyBracketPreference) == 0;
+            PhLayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl("Escape Character", PhLayer.settings.escapeIdentifiersWithAtSymbol ? 0 : 1, Contents.escapeIdentifierOptions) == 0;
             PhLayer.settings.skipDefaultLayers = EditorGUILayout.Toggle("Skip Default Layers", PhLayer.settings.skipDefaultLayers);
             
             if(EditorGUI.EndChangeCheck()) {
@@ -131,6 +132,7 @@ namespace JesseStiller.PhLayerTool {
                     PhLayer.settings = new Settings();
                     PhLayer.SaveSettings();
                     generatorPreviewText = Generator.GetPreview();
+                    GUIUtility.keyboardControl = 0;
                 }
                 GUI.enabled = true;
             }
@@ -214,7 +216,7 @@ namespace JesseStiller.PhLayerTool {
         }
 
         private static string DoTextField(int controlId, Rect rect, string text, GUIStyle style, string allowedLetters, bool changed, bool reset, bool multiline, bool passwordField) {
-            object[] parameters = {(TextEditor)recycledEditorField.GetValue(null), controlId, rect, text, style, allowedLetters, changed, reset, multiline, passwordField };
+            object[] parameters = { recycledEditor, controlId, rect, text, style, allowedLetters, changed, reset, multiline, passwordField };
             return (string)doTextFieldMethod.Invoke(null, parameters);
         }
 
