@@ -4,6 +4,8 @@ using UnityEditor;
 using UnityEngine;
 
 namespace JesseStiller.PhLayerTool {
+    // TODO: Change Indentation Style "Space" options with "1-space", "2-space", etc.
+
     public class PreferencesPane {
         private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType("UnityEditor.PreferencesWindow");
         private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
@@ -42,11 +44,11 @@ namespace JesseStiller.PhLayerTool {
 
         private static class Contents {
             internal static readonly GUIContent[] fileNameExtensions = { new GUIContent(".cs"), new GUIContent(".g.cs") };
-            internal static readonly GUIContent[] curlyBracketPreference = { new GUIContent("Same Line"), new GUIContent("New Line") };
+            internal static readonly GUIContent[] curlyBracketPreference = { new GUIContent("Same line"), new GUIContent("New line") };
             internal static readonly GUIContent[] lineEndings = { new GUIContent("Windows-style"), new GUIContent("Unix-style") };
             internal static readonly GUIContent[] escapeIdentifierOptions = { new GUIContent("Underscore (_)"), new GUIContent("At symbol (@)")};
             internal static readonly string[] casing = {
-                "Leave As-Is", "Camel", "Pascal", "Caps Lock", "Caps Lock (Underscored)"
+                "Leave as-is", "Camel", "Pascal", "Caps Lock", "Caps Lock (underscored)"
             };
         }
 
@@ -79,8 +81,8 @@ namespace JesseStiller.PhLayerTool {
             PhLayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", PhLayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
             EditorGUILayout.BeginHorizontal();
             PhLayer.settings.outputDirectory = DirectoryPathField("Output Directory", PhLayer.settings.outputDirectory);
-            if(GUILayout.Button("Browse…", GUILayout.Width(70f), GUILayout.Height(23f))) {
-                string chosenPath = EditorUtility.OpenFolderPanel("PhLayer", GetOutputDirectory(), string.Empty);
+            if(GUILayout.Button("Browse…", GUILayout.Width(80f), GUILayout.Height(22f))) {
+                string chosenPath = EditorUtility.OpenFolderPanel("Browse", GetOutputDirectory(), string.Empty);
                 if(string.IsNullOrEmpty(chosenPath) == false) PhLayer.settings.outputDirectory = GetLocalPathFromAbsolutePath(chosenPath);
             }
             EditorGUILayout.EndHorizontal();
@@ -96,7 +98,7 @@ namespace JesseStiller.PhLayerTool {
             PhLayer.settings.lineEndings = (LineEndings)RadioButtonsControl("Line Endings", (int)PhLayer.settings.lineEndings, Contents.lineEndings);
             PhLayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, Contents.curlyBracketPreference) == 1;
             PhLayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl("Escape Character", PhLayer.settings.escapeIdentifiersWithAtSymbol ? 1 : 0, Contents.escapeIdentifierOptions) == 1;
-            PhLayer.settings.skipBuiltinLayers = EditorGUILayout.Toggle("Skip Builtin Layers", PhLayer.settings.skipBuiltinLayers);
+            PhLayer.settings.skipDefaultLayers = EditorGUILayout.Toggle("Skip Default Layers", PhLayer.settings.skipDefaultLayers);
             
             if(EditorGUI.EndChangeCheck()) {
                 generatorPreviewText = Generator.GetPreview();
@@ -117,12 +119,12 @@ namespace JesseStiller.PhLayerTool {
             }
 
             using(new EditorGUILayout.HorizontalScope()) {
-                if(GUILayout.Button("Generate Now", GUILayout.Width(120f), GUILayout.Height(22f))) {
+                if(GUILayout.Button("Generate Script", GUILayout.Width(125f), GUILayout.Height(22f))) {
                     Generator.GenerateAndSave();
                 }
 
                 GUI.enabled = !PhLayer.settings.Equals(defaultSettings);
-                if(GUILayout.Button("Restore Defaults", GUILayout.Width(120f), GUILayout.Height(22f))) {
+                if(GUILayout.Button("Restore Defaults", GUILayout.Width(125f), GUILayout.Height(22f))) {
                     PhLayer.settings = new Settings();
                     PhLayer.SaveSettings();
                     generatorPreviewText = Generator.GetPreview();

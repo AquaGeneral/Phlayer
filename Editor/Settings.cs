@@ -12,7 +12,7 @@ namespace JesseStiller.PhLayerTool {
         * The coding convention defaults simply match Microsoft's preferences used in MSDN documentation.
         */
         public Casing casing = Casing.Pascal;
-        public bool skipBuiltinLayers = false;
+        public bool skipDefaultLayers = false;
         public string outputDirectory = "";
         public string classNamespace = "";
         public string className = "Layers";

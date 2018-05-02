@@ -107,7 +107,7 @@ namespace JesseStiller.PhLayerTool {
 
             HashSet<string> layers = new HashSet<string>();
 
-            for(int i = PhLayer.settings.skipBuiltinLayers ? 8 : 0; i < 32; i++) {
+            for(int i = PhLayer.settings.skipDefaultLayers ? 8 : 0; i < 32; i++) {
                 string layerName = LayerMask.LayerToName(i);
                 if(IsNullOrWhitespace(layerName)) continue;
 
