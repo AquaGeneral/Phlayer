@@ -4,7 +4,9 @@ using UnityEditor;
 using UnityEngine;
 
 namespace JesseStiller.PhLayerTool {
-    // TODO: Change Indentation Style "Space" options with "1-space", "2-space", etc.
+    // TODO: Swap order of Curly Brackets and Escape Character options.
+    // TODO: Handle PhLayer folder being renamed.
+    // TODO: Unfocus text box when Restore Defaults is clicked.
 
     public class PreferencesPane {
         private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType("UnityEditor.PreferencesWindow");
@@ -50,6 +52,7 @@ namespace JesseStiller.PhLayerTool {
             internal static readonly string[] casing = {
                 "Leave as-is", "Camel", "Pascal", "Caps Lock", "Caps Lock (underscored)"
             };
+            internal static readonly GUIContent[] indentationStyles = { new GUIContent("1-space"), new GUIContent("2-space"), new GUIContent("3-space"), new GUIContent("4-space"), new GUIContent("Tabs") };
         }
 
         [PreferenceItem("PhLayer")]
@@ -94,7 +97,7 @@ namespace JesseStiller.PhLayerTool {
             EditorGUILayout.LabelField("Generated Code", EditorStyles.boldLabel);
             PhLayer.settings.classNamespace = ValidatedTextField("Class Namespace", PhLayer.settings.classNamespace, true);
             PhLayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)PhLayer.settings.casing, Contents.casing);
-            PhLayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.EnumPopup("Indentation Style", PhLayer.settings.indentationStyle);
+            PhLayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.Popup(new GUIContent("Indentation Style"), (int)PhLayer.settings.indentationStyle, Contents.indentationStyles);
             PhLayer.settings.lineEndings = (LineEndings)RadioButtonsControl("Line Endings", (int)PhLayer.settings.lineEndings, Contents.lineEndings);
             PhLayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 1 : 0, Contents.curlyBracketPreference) == 1;
             PhLayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl("Escape Character", PhLayer.settings.escapeIdentifiersWithAtSymbol ? 1 : 0, Contents.escapeIdentifierOptions) == 1;
@@ -115,7 +118,7 @@ namespace JesseStiller.PhLayerTool {
             if(previewFoldout) {
                 Rect previewTextAreaRect = EditorGUILayout.GetControlRect(
                     GUILayout.ExpandWidth(true), GUILayout.Height(Styles.previewTextArea.CalcSize(new GUIContent(generatorPreviewText)).y));
-                EditorGUI.TextArea(previewTextAreaRect, generatorPreviewText, Styles.previewTextArea);
+                GUI.Label(previewTextAreaRect, generatorPreviewText, Styles.previewTextArea);
             }
 
             using(new EditorGUILayout.HorizontalScope()) {

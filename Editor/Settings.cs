@@ -20,7 +20,7 @@ namespace JesseStiller.PhLayerTool {
         public bool escapeIdentifiersWithAtSymbol = true;
         public bool curlyBracketOnNewLine = true;
         public LineEndings lineEndings = LineEndings.Windows;
-        public IndentationStyle indentationStyle = IndentationStyle.Spaces4;
+        public IndentationStyle indentationStyle = IndentationStyle.FourSpaces;
 
         // Do the rest via reflection so we don't have to update this code every time we update the settings.
         public override bool Equals(object obj) {
