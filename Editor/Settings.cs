@@ -2,9 +2,10 @@
 using System;
 using System.Reflection;
 
-namespace JesseStiller.PhLayerTool {
+namespace JesseStiller.PhlayerTool {
+    // Settings derrives from UnityEngine.Object solely for EditorJsonUtility to work in Unity 5.3.
     [Serializable]
-    internal class Settings {
+    internal class Settings : UnityEngine.Object {
         private static readonly FieldInfo[] fields = typeof(Settings).GetFields(BindingFlags.Instance | BindingFlags.Public);
 
         /**

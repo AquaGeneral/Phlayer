@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 
-namespace JesseStiller.PhLayerTool {
+namespace JesseStiller.PhlayerTool {
     internal static class Utilities {
         private static readonly char[] invalidPathChars = {
             '"', '<', '>', '|', char.MinValue, '\x0001', '\x0002', '\x0003', '\x0004', '\x0005', '\x0006', '\a', '\b', '\t', '\n', '\v', '\f',

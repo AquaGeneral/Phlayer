@@ -1,4 +1,4 @@
-﻿namespace JesseStiller.PhLayerTool {
+﻿namespace JesseStiller.PhlayerTool {
     internal enum SettingsError : byte {
         None,
         NoDirectory,

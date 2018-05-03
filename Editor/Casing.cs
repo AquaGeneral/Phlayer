@@ -1,4 +1,4 @@
-﻿namespace JesseStiller.PhLayerTool {
+﻿namespace JesseStiller.PhlayerTool {
     public enum Casing {
         LeaveAsIs,
         Camel,

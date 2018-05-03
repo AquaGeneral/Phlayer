@@ -3,7 +3,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace JesseStiller.PhLayerTool {
+namespace JesseStiller.PhlayerTool {
     public class PreferencesPane {
         private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType("UnityEditor.PreferencesWindow");
         private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
@@ -53,17 +53,17 @@ namespace JesseStiller.PhLayerTool {
             };
         }
 
-        [PreferenceItem("PhLayer")]
+        [PreferenceItem("Phlayer")]
         private static void DrawPreferences() {
             Styles.Initialize();
-            PhLayer.InitializeSettings();
+            Phlayer.InitializeSettings();
 
-            switch(PhLayer.errorState) {
+            switch(Phlayer.errorState) {
                 case SettingsError.NoDirectory:
-                    EditorGUILayout.HelpBox("There is no valid directory named PhLayer - do not rename the directory that PhLayer is contained within.", MessageType.Error);
+                    EditorGUILayout.HelpBox("There is no valid directory named Phlayer - do not rename the directory that Phlayer is contained within.", MessageType.Error);
                     return;
                 case SettingsError.NoValidFile:
-                    EditorGUILayout.HelpBox("PhLayer somehow couldn't find the main location of its files. Make sure you did not modify PhLayer's code, nor directory names.", MessageType.Error);
+                    EditorGUILayout.HelpBox("Phlayer somehow couldn't find the main location of its files. Make sure you did not modify Phlayer's code, nor directory names.", MessageType.Error);
                     return;
             }
 
@@ -78,14 +78,14 @@ namespace JesseStiller.PhLayerTool {
             */
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.LabelField("File", EditorStyles.boldLabel);
-            PhLayer.settings.className = ValidatedTextField("Class Name", PhLayer.settings.className, true, "Layers");
-            PhLayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", PhLayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
+            Phlayer.settings.className = ValidatedTextField("Class Name", Phlayer.settings.className, true, "Layers");
+            Phlayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", Phlayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
             EditorGUILayout.BeginHorizontal();
-            PhLayer.settings.outputDirectory = DirectoryPathField("Output Directory", PhLayer.settings.outputDirectory);
+            Phlayer.settings.outputDirectory = DirectoryPathField("Output Directory", Phlayer.settings.outputDirectory);
             if(GUILayout.Button("Browse…", GUILayout.Width(80f), GUILayout.Height(22f))) {
                 string chosenPath = EditorUtility.OpenFolderPanel("Browse", GetOutputDirectory(), string.Empty);
                 if(string.IsNullOrEmpty(chosenPath) == false) {
-                    PhLayer.settings.outputDirectory = GetLocalPathFromAbsolutePath(chosenPath);
+                    Phlayer.settings.outputDirectory = GetLocalPathFromAbsolutePath(chosenPath);
                     GUIUtility.keyboardControl = 0;
                 }
             }
@@ -96,25 +96,28 @@ namespace JesseStiller.PhLayerTool {
             * Generated Code
             */
             EditorGUILayout.LabelField("Generated Code", EditorStyles.boldLabel);
-            PhLayer.settings.classNamespace = ValidatedTextField("Class Namespace", PhLayer.settings.classNamespace, true);
-            PhLayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)PhLayer.settings.casing, Contents.casing);
-            PhLayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.Popup(new GUIContent("Indentation Style"), (int)PhLayer.settings.indentationStyle, Contents.indentationStyles);
-            PhLayer.settings.lineEndings = (LineEndings)RadioButtonsControl("Line Endings", (int)PhLayer.settings.lineEndings, Contents.lineEndings);
-            PhLayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", PhLayer.settings.curlyBracketOnNewLine ? 0 : 1, Contents.curlyBracketPreference) == 0;
-            PhLayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl("Escape Character", PhLayer.settings.escapeIdentifiersWithAtSymbol ? 0 : 1, Contents.escapeIdentifierOptions) == 0;
-            PhLayer.settings.skipDefaultLayers = EditorGUILayout.Toggle("Skip Default Layers", PhLayer.settings.skipDefaultLayers);
+            Phlayer.settings.classNamespace = ValidatedTextField("Class Namespace", Phlayer.settings.classNamespace, true);
+            Phlayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)Phlayer.settings.casing, Contents.casing);
+            Phlayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.Popup(new GUIContent("Indentation Style"), (int)Phlayer.settings.indentationStyle, Contents.indentationStyles);
+            Phlayer.settings.lineEndings = (LineEndings)RadioButtonsControl("Line Endings", (int)Phlayer.settings.lineEndings, Contents.lineEndings);
+            Phlayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", Phlayer.settings.curlyBracketOnNewLine ? 0 : 1, Contents.curlyBracketPreference) == 0;
+            Phlayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl("Escape Character", Phlayer.settings.escapeIdentifiersWithAtSymbol ? 0 : 1, Contents.escapeIdentifierOptions) == 0;
+            Phlayer.settings.skipDefaultLayers = EditorGUILayout.Toggle("Skip Default Layers", Phlayer.settings.skipDefaultLayers);
             
             if(EditorGUI.EndChangeCheck()) {
                 generatorPreviewText = Generator.GetPreview();
                 if(previewFoldout) expandWindowHeight = true;
-                PhLayer.SaveSettings();
+                Phlayer.SaveSettings();
             }
-            
-            using(EditorGUI.ChangeCheckScope change = new EditorGUI.ChangeCheckScope()) {
-                previewFoldout = EditorGUILayout.Foldout(previewFoldout, "Preview", true);
-                if(change.changed && previewFoldout) {
-                    expandWindowHeight = true;
-                }
+
+            EditorGUI.BeginChangeCheck();
+#if UNITY_5_5_OR_NEWER
+            previewFoldout = EditorGUILayout.Foldout(previewFoldout, "Preview", true);
+#else
+            previewFoldout = EditorGUILayout.Foldout(previewFoldout, "Preview");
+#endif
+            if(EditorGUI.EndChangeCheck() && previewFoldout) {
+                expandWindowHeight = true;
             }
             if(previewFoldout) {
                 Rect previewTextAreaRect = EditorGUILayout.GetControlRect(
@@ -127,10 +130,10 @@ namespace JesseStiller.PhLayerTool {
                     Generator.GenerateAndSave();
                 }
 
-                GUI.enabled = !PhLayer.settings.Equals(defaultSettings);
+                GUI.enabled = !Phlayer.settings.Equals(defaultSettings);
                 if(GUILayout.Button("Restore Defaults", GUILayout.Width(125f), GUILayout.Height(22f))) {
-                    PhLayer.settings = new Settings();
-                    PhLayer.SaveSettings();
+                    Phlayer.settings = new Settings();
+                    Phlayer.SaveSettings();
                     generatorPreviewText = Generator.GetPreview();
                     GUIUtility.keyboardControl = 0;
                 }
@@ -154,7 +157,7 @@ namespace JesseStiller.PhLayerTool {
             return GUI.Toolbar(toolbarRect, selectedIndex, options, Styles.radioButton);
         }
 
-        private static readonly int validatedTextFieldId = "PhLayerValidatedTextField".GetHashCode();
+        private static readonly int validatedTextFieldId = "PhlayerValidatedTextField".GetHashCode();
         private static string ValidatedTextField(string label, string text, bool allowDots, string defaultValue = "") {
             Rect r = EditorGUILayout.GetControlRect();
             int controlId = GUIUtility.GetControlID(validatedTextFieldId, FocusType.Keyboard, r);
@@ -186,7 +189,7 @@ namespace JesseStiller.PhLayerTool {
             return text;
         }
 
-        private static readonly int directoryPathFieldId = "PhLayerDirectoryPathField".GetHashCode();
+        private static readonly int directoryPathFieldId = "PhlayerDirectoryPathField".GetHashCode();
         private static string DirectoryPathField(string label, string text) {
             Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(29f));
             int controlId = GUIUtility.GetControlID(directoryPathFieldId, FocusType.Keyboard, r);
@@ -221,10 +224,10 @@ namespace JesseStiller.PhLayerTool {
         }
 
         private static string GetOutputDirectory() {
-            if(string.IsNullOrEmpty(PhLayer.settings.outputDirectory)) {
-                return GetLocalPathFromAbsolutePath(PhLayer.mainDirectory);
+            if(string.IsNullOrEmpty(Phlayer.settings.outputDirectory)) {
+                return GetLocalPathFromAbsolutePath(Phlayer.mainDirectory);
             } else {
-                return PhLayer.settings.outputDirectory;
+                return Phlayer.settings.outputDirectory;
             }
         }
 

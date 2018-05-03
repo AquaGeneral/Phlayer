@@ -3,8 +3,8 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace JesseStiller.PhLayerTool {
-    internal static class PhLayer {
+namespace JesseStiller.PhlayerTool {
+    internal static class Phlayer {
         private const int maxSearchLineCount = 12;
 
         public static string mainDirectory;
@@ -19,13 +19,13 @@ namespace JesseStiller.PhLayerTool {
 
             int directoryCount = 0;
             string line;
-            foreach(string phLayerDirectory in Directory.GetDirectories(Application.dataPath, "*PhLayer", SearchOption.AllDirectories)) {
+            foreach(string phLayerDirectory in Directory.GetDirectories(Application.dataPath, "*Phlayer", SearchOption.AllDirectories)) {
                 directoryCount++;
                 foreach(string filePath in Directory.GetFiles(phLayerDirectory, "*.cs", SearchOption.AllDirectories)) {
                     using(StreamReader sr = new StreamReader(filePath)) {
                         int lineCount = 0;
                         while((line = sr.ReadLine()) != null) {
-                            if(line.StartsWith("namespace JesseStiller.PhLayerTool {", StringComparison.Ordinal)) {
+                            if(line.StartsWith("namespace JesseStiller.PhlayerTool {", StringComparison.Ordinal)) {
                                 mainDirectory = phLayerDirectory;
                                 LoadSettings();
                                 return;
