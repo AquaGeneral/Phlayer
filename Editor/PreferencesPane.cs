@@ -60,10 +60,10 @@ namespace JesseStiller.PhlayerTool {
 
             switch(Phlayer.errorState) {
                 case SettingsError.NoDirectory:
-                    EditorGUILayout.HelpBox("There is no valid directory named Phlayer - do not rename the directory that Phlayer is contained within.", MessageType.Error);
+                    EditorGUILayout.HelpBox("There is no valid directory named PhLayer. Do not rename the directory that Phlayer is contained within.", MessageType.Error);
                     return;
                 case SettingsError.NoValidFile:
-                    EditorGUILayout.HelpBox("Phlayer somehow couldn't find the main location of its files. Make sure you did not modify Phlayer's code, nor directory names.", MessageType.Error);
+                    EditorGUILayout.HelpBox("Phlayer could not find the main location of its files. Ensure Phlayer's code and directory names have not been modified.", MessageType.Error);
                     return;
             }
 
