@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Text;
+using UnityEngine;
 
 namespace JesseStiller.PhlayerTool {
     internal static class Utilities {
@@ -48,12 +49,8 @@ namespace JesseStiller.PhlayerTool {
         }
 
         internal static string GetLocalPathFromAbsolutePath(string absolutePath) {
-            int indexOfAssets = absolutePath.IndexOf("Assets", StringComparison.OrdinalIgnoreCase);
-
-            if(indexOfAssets == -1) {
-                throw new ArgumentException("The 'assetsPath' parameter must contain 'Assets/'");
-            }
-            return absolutePath.Remove(0, indexOfAssets);
+            if(absolutePath.Length <= Application.dataPath.Length) return "";
+            return absolutePath.Substring(Application.dataPath.Length + 1);
         }
     }
 }

@@ -13,6 +13,7 @@ namespace JesseStiller.PhlayerTool {
         private static string generatorPreviewText;
         private static bool previewFoldout = false;
         private static bool expandWindowHeight = false;
+        private static Vector2 scrollPosition;
 
         private static class Styles {
             internal static GUIStyle greyItalicLabel, wordWrappedTextField, previewTextArea, radioButton;
@@ -66,6 +67,9 @@ namespace JesseStiller.PhlayerTool {
                     EditorGUILayout.HelpBox("Phlayer could not find the main location of its files. Ensure Phlayer's code and directory names have not been modified.", MessageType.Error);
                     return;
             }
+
+            // TODO: Find which version of Unity makes this not necessary
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
             if(string.IsNullOrEmpty(generatorPreviewText)) {
                 generatorPreviewText = Generator.GetPreview();
@@ -135,7 +139,8 @@ namespace JesseStiller.PhlayerTool {
                 }
 
                 GUI.enabled = !Phlayer.settings.Equals(defaultSettings);
-                if(GUILayout.Button("Restore Defaults", GUILayout.Width(125f), GUILayout.Height(22f))) {
+                if(GUILayout.Button("Restore Defaults", GUILayout.Width(125f), GUILayout.Height(22f)) &&
+                    EditorUtility.DisplayDialog("Phlayer", "Are you sure you want to restore settings to their defaults?", "Restore Default Settings", "Cancel")) {
                     Phlayer.CreateNewSettings();
                     generatorPreviewText = Generator.GetPreview();
                     GUIUtility.keyboardControl = 0;
@@ -152,6 +157,8 @@ namespace JesseStiller.PhlayerTool {
                 );
                 expandWindowHeight = false;
             }
+
+            EditorGUILayout.EndScrollView();
         }
 
         private static int RadioButtonsControl(string label, int selectedIndex, GUIContent[] options) {

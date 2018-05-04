@@ -10,8 +10,6 @@ namespace JesseStiller.PhlayerTool {
     /**
     * TODO:
     * - ScrollView for older versions of Unity whose Preferences window can't be expanded.
-    * - Test with Generating by Layers update asset changed while the Settings is null due to the Phlayer directory being a different name
-    * - Replaces \ with / in all path usages
     */
     public class Generator : AssetPostprocessor {
         private const string windowsLineEnding = "\r\n";
@@ -32,7 +30,14 @@ namespace JesseStiller.PhlayerTool {
 
         [MenuItem("Assets/Phlayer/Force Class Generation")]
         internal static void GenerateAndSave() {
-            Phlayer.InitializeSettings();
+            if(Phlayer.InitializeSettings() == false) {
+                if(Phlayer.errorState == SettingsError.NoDirectory) {
+                    Debug.LogError("Phlayer couldn't generate the layers class automatically because it couldn't find its main directory. Ensure Phlayer's main directory hasn't been renamed.");
+                } else if(Phlayer.errorState == SettingsError.NoValidFile) {
+                    Debug.LogError("Phlayer couldn't generate the layers class automatically because it couldn't find any scripts in its main directory. Reimport the Phlayer package.");
+                }
+                return;
+            }
 
             if(Path.IsPathRooted(Phlayer.settings.outputDirectory)) {
                 EditorUtility.DisplayDialog("Generate Script", "The output directory must be relative to the current Unity project's Assets directory.", "Close");
@@ -41,8 +46,7 @@ namespace JesseStiller.PhlayerTool {
 
             Generate(preview: false);
 
-            string localFilePath = GetLocalPath();
-            string absoluteFilePath = GetAbsolutePathFromLocalPath(localFilePath);
+            string absoluteFilePath = GetAbsolutePathFromLocalPath(GetLocalPath());
             string absoluteDirectory = Path.GetDirectoryName(absoluteFilePath);
 
             try {
@@ -80,13 +84,13 @@ namespace JesseStiller.PhlayerTool {
                 Debug.LogError(string.Format("Phlayer was not able to save {0} for the following reason:\n{1}", absoluteFilePath, e.ToString()));
             }
             if(fileWritten == false) return;
-            AssetDatabase.ImportAsset(localFilePath, ImportAssetOptions.ForceUpdate);
+            AssetDatabase.ImportAsset("Assets/" + GetLocalPath(), ImportAssetOptions.ForceUpdate);
         }
 
         internal static string GetLocalPath() {
             string className = string.IsNullOrEmpty(Phlayer.settings.className) ? "Layers" : Phlayer.settings.className;
             string extension = Phlayer.settings.appendDotGInFileName ? ".g.cs" : ".cs";
-            return Path.Combine(Phlayer.settings.outputDirectory, className + extension);
+            return Path.Combine(Phlayer.settings.outputDirectory, className + extension).Replace('\\', '/');
         }
 
         private static void Generate(bool preview) {
@@ -240,14 +244,8 @@ namespace JesseStiller.PhlayerTool {
             }
         }
 
-        /// <summary>
-        /// Get the absolute path from a local path.
-        /// </summary>
-        /// <param name="localPath">The path contained within the "Assets" direction. Eg: "Models/Model.fbx"</param>
-        /// <example>Passing "Models/Model.fbx" will return "C:/Users/John/MyProject/Assets/Models/Model.fbx"</example>
-        /// <returns>Returns the absolute/full system path from the local "Assets" inclusive path.</returns>
         private static string GetAbsolutePathFromLocalPath(string localPath) {
-            return Application.dataPath.Remove(Application.dataPath.Length - 6, 6) + localPath;
+            return Path.Combine(Application.dataPath, localPath);
         }
     }
 }

@@ -12,8 +12,8 @@ namespace JesseStiller.PhlayerTool {
         public static SettingsError errorState;
         public static Settings settings;
         
-        internal static void InitializeSettings() {
-            if(string.IsNullOrEmpty(mainDirectory) == false) return;
+        internal static bool InitializeSettings() {
+            if(string.IsNullOrEmpty(mainDirectory) == false) return true;
 
             errorState = SettingsError.None;
 
@@ -28,7 +28,7 @@ namespace JesseStiller.PhlayerTool {
                             if(line.StartsWith("namespace JesseStiller.PhlayerTool {", StringComparison.Ordinal)) {
                                 mainDirectory = Utilities.GetLocalPathFromAbsolutePath(phLayerDirectory);
                                 LoadSettings();
-                                return;
+                                return true;
                             }
 
                             if(lineCount++ > maxSearchLineCount) break;
@@ -42,10 +42,11 @@ namespace JesseStiller.PhlayerTool {
             } else {
                 errorState = SettingsError.NoValidFile;
             }
+            return false;
         }
 
         private static void LoadSettings() {
-            settingsPath = Path.Combine(mainDirectory, "Settings.asset");
+            settingsPath = "Assets/" + mainDirectory + "/Settings.asset";
             if(File.Exists(settingsPath)) {
                 settings = AssetDatabase.LoadAssetAtPath<Settings>(settingsPath);
             } else {
