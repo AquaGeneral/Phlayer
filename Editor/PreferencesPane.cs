@@ -60,7 +60,7 @@ namespace JesseStiller.PhlayerTool {
 
             switch(Phlayer.errorState) {
                 case SettingsError.NoDirectory:
-                    EditorGUILayout.HelpBox("There is no valid directory named Phlayer. DO not rename Phlayer's main directory.", MessageType.Error);
+                    EditorGUILayout.HelpBox("There is no valid directory named Phlayer. Ensure Phlayer's main directory has not been modified.", MessageType.Error);
                     return;
                 case SettingsError.NoValidFile:
                     EditorGUILayout.HelpBox("Phlayer could not find the main location of its files. Ensure Phlayer's code and directory names have not been modified.", MessageType.Error);
@@ -82,11 +82,11 @@ namespace JesseStiller.PhlayerTool {
             Phlayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", Phlayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
             EditorGUILayout.BeginHorizontal();
             Phlayer.settings.outputDirectory = DirectoryPathField("Output Directory", Phlayer.settings.outputDirectory);
-            if(GUILayout.Button("Browse…", GUILayout.Width(75f), GUILayout.Height(22f))) {
+            if(GUILayout.Button("Browse…", GUILayout.Width(78f), GUILayout.Height(22f))) {
                 string chosenPath = EditorUtility.OpenFolderPanel("Browse", GetOutputDirectory(), string.Empty);
                 if(string.IsNullOrEmpty(chosenPath) == false) {
                     if(chosenPath.Contains(Application.dataPath) == false) {
-                        EditorUtility.DisplayDialog("Phlayer", "The output directory must be contained within the current Unity project.", "Close");
+                        EditorUtility.DisplayDialog("Browse", "The output directory must be contained within the current Unity project.", "Close");
                     } else {
                         Phlayer.settings.outputDirectory = Utilities.GetLocalPathFromAbsolutePath(chosenPath);
                         GUIUtility.keyboardControl = 0;

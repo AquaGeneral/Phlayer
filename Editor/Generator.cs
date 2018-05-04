@@ -58,7 +58,7 @@ namespace JesseStiller.PhlayerTool {
                 File.WriteAllText(absoluteFilePath, sb.ToString());
                 fileWritten = true;
             } catch(Exception e) {
-                Debug.LogError(string.Format("Phlayer wasn't able to save {0} for the following reason:\n{1}", absoluteFilePath, e.ToString()));
+                Debug.LogError(string.Format("Phlayer was not able to save {0} for the following reason:\n{1}", absoluteFilePath, e.ToString()));
             }
             if(fileWritten == false) return;
             AssetDatabase.ImportAsset(localFilePath, ImportAssetOptions.ForceUpdate);
