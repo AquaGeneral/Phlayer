@@ -52,8 +52,13 @@ namespace JesseStiller.PhlayerTool {
                 return;
             }
 
-            if(Directory.Exists(absoluteDirectory) == false) {
-                Directory.CreateDirectory(absoluteDirectory);
+            try {
+                if(Directory.Exists(absoluteDirectory) == false) {
+                    Directory.CreateDirectory(absoluteDirectory);
+                }
+            } catch(Exception e) {
+                EditorUtility.DisplayDialog("Phlayer", string.Format("The output filepath is invalid for the following reason: {0}", e.Message), "Cancel");
+                return;
             }
 
             // Make sure that we are writing to one of our own files if already present, and not something created by a anyone/anything else.
