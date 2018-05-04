@@ -35,3 +35,5 @@ sysinfo.txt
 *.unitypackage
 Settings.json
 Settings.json.meta
+Settings.asset
+Settings.asset.meta

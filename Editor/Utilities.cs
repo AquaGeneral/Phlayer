@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using System.Text;
 
 namespace JesseStiller.PhlayerTool {
@@ -44,6 +45,15 @@ namespace JesseStiller.PhlayerTool {
                 }
             }
             return sb.ToString();
+        }
+
+        internal static string GetLocalPathFromAbsolutePath(string absolutePath) {
+            int indexOfAssets = absolutePath.IndexOf("Assets", StringComparison.OrdinalIgnoreCase);
+
+            if(indexOfAssets == -1) {
+                throw new ArgumentException("The 'assetsPath' parameter must contain 'Assets/'");
+            }
+            return absolutePath.Remove(0, indexOfAssets);
         }
     }
 }

@@ -8,7 +8,7 @@ namespace JesseStiller.PhlayerTool {
         private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType("UnityEditor.PreferencesWindow");
         private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly TextEditor recycledEditor = (TextEditor)typeof(EditorGUI).GetField("s_RecycledEditor", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
-        private static readonly Settings defaultSettings = new Settings();
+        private static readonly Settings defaultSettings = ScriptableObject.CreateInstance<Settings>();
 
         private static string generatorPreviewText;
         private static bool previewFoldout = false;
@@ -60,7 +60,7 @@ namespace JesseStiller.PhlayerTool {
 
             switch(Phlayer.errorState) {
                 case SettingsError.NoDirectory:
-                    EditorGUILayout.HelpBox("There is no valid directory named PhLayer. Do not rename the directory that Phlayer is contained within.", MessageType.Error);
+                    EditorGUILayout.HelpBox("There is no valid directory named Phlayer. DO not rename Phlayer's main directory.", MessageType.Error);
                     return;
                 case SettingsError.NoValidFile:
                     EditorGUILayout.HelpBox("Phlayer could not find the main location of its files. Ensure Phlayer's code and directory names have not been modified.", MessageType.Error);
@@ -71,7 +71,7 @@ namespace JesseStiller.PhlayerTool {
                 generatorPreviewText = Generator.GetPreview();
             }
 
-            EditorGUIUtility.labelWidth = 140f;
+            EditorGUIUtility.labelWidth = 130f;
 
             /**
             * File
@@ -82,11 +82,15 @@ namespace JesseStiller.PhlayerTool {
             Phlayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", Phlayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
             EditorGUILayout.BeginHorizontal();
             Phlayer.settings.outputDirectory = DirectoryPathField("Output Directory", Phlayer.settings.outputDirectory);
-            if(GUILayout.Button("Browse…", GUILayout.Width(80f), GUILayout.Height(22f))) {
+            if(GUILayout.Button("Browse…", GUILayout.Width(75f), GUILayout.Height(22f))) {
                 string chosenPath = EditorUtility.OpenFolderPanel("Browse", GetOutputDirectory(), string.Empty);
                 if(string.IsNullOrEmpty(chosenPath) == false) {
-                    Phlayer.settings.outputDirectory = GetLocalPathFromAbsolutePath(chosenPath);
-                    GUIUtility.keyboardControl = 0;
+                    if(chosenPath.Contains(Application.dataPath) == false) {
+                        EditorUtility.DisplayDialog("Phlayer", "The output directory must be contained within the current Unity project.", "Close");
+                    } else {
+                        Phlayer.settings.outputDirectory = Utilities.GetLocalPathFromAbsolutePath(chosenPath);
+                        GUIUtility.keyboardControl = 0;
+                    }
                 }
             }
             EditorGUILayout.EndHorizontal();
@@ -107,7 +111,6 @@ namespace JesseStiller.PhlayerTool {
             if(EditorGUI.EndChangeCheck()) {
                 generatorPreviewText = Generator.GetPreview();
                 if(previewFoldout) expandWindowHeight = true;
-                Phlayer.SaveSettings();
             }
 
             EditorGUI.BeginChangeCheck();
@@ -132,8 +135,7 @@ namespace JesseStiller.PhlayerTool {
 
                 GUI.enabled = !Phlayer.settings.Equals(defaultSettings);
                 if(GUILayout.Button("Restore Defaults", GUILayout.Width(125f), GUILayout.Height(22f))) {
-                    Phlayer.settings = new Settings();
-                    Phlayer.SaveSettings();
+                    Phlayer.CreateNewSettings();
                     generatorPreviewText = Generator.GetPreview();
                     GUIUtility.keyboardControl = 0;
                 }
@@ -225,19 +227,10 @@ namespace JesseStiller.PhlayerTool {
 
         private static string GetOutputDirectory() {
             if(string.IsNullOrEmpty(Phlayer.settings.outputDirectory)) {
-                return GetLocalPathFromAbsolutePath(Phlayer.mainDirectory);
+                return Phlayer.mainDirectory;
             } else {
                 return Phlayer.settings.outputDirectory;
             }
-        }
-
-        private static string GetLocalPathFromAbsolutePath(string absolutePath) {
-            int indexOfAssets = absolutePath.IndexOf("Assets", StringComparison.OrdinalIgnoreCase);
-
-            if(indexOfAssets == -1) {
-                throw new ArgumentException("The 'assetsPath' parameter must contain 'Assets/'");
-            }
-            return absolutePath.Remove(0, indexOfAssets);
         }
     }
 }

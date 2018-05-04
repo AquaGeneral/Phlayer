@@ -1,11 +1,10 @@
-﻿#pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
-using System;
+﻿using System;
 using System.Reflection;
+using UnityEngine;
 
 namespace JesseStiller.PhlayerTool {
-    // Settings derrives from UnityEngine.Object solely for EditorJsonUtility to work in Unity 5.3.
     [Serializable]
-    internal class Settings : UnityEngine.Object {
+    internal class Settings : ScriptableObject {
         private static readonly FieldInfo[] fields = typeof(Settings).GetFields(BindingFlags.Instance | BindingFlags.Public);
 
         /**
@@ -32,12 +31,18 @@ namespace JesseStiller.PhlayerTool {
             return true;
         }
 
+        public override int GetHashCode() {
+            return base.GetHashCode();
+        }
+
         public Settings Clone() {
-            Settings settings = new Settings();
+            Settings settings = ScriptableObject.CreateInstance<Settings>();
             foreach(FieldInfo field in fields) {
                 field.SetValue(settings, field.GetValue(this));
             }
             return settings;
         }
+
+        
     }
 }

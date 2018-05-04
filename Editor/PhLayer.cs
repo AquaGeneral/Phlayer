@@ -7,8 +7,8 @@ namespace JesseStiller.PhlayerTool {
     internal static class Phlayer {
         private const int maxSearchLineCount = 12;
 
-        public static string mainDirectory;
-        private static string settingsPath;
+        public static string mainDirectory; // Local path-space, contained with the Assets folder
+        private static string settingsPath; // Local path-space, contained with the Assets folder
         public static SettingsError errorState;
         public static Settings settings;
         
@@ -26,7 +26,7 @@ namespace JesseStiller.PhlayerTool {
                         int lineCount = 0;
                         while((line = sr.ReadLine()) != null) {
                             if(line.StartsWith("namespace JesseStiller.PhlayerTool {", StringComparison.Ordinal)) {
-                                mainDirectory = phLayerDirectory;
+                                mainDirectory = Utilities.GetLocalPathFromAbsolutePath(phLayerDirectory);
                                 LoadSettings();
                                 return;
                             }
@@ -45,28 +45,17 @@ namespace JesseStiller.PhlayerTool {
         }
 
         private static void LoadSettings() {
-            settingsPath = Path.Combine(mainDirectory, "Settings.json");
+            settingsPath = Path.Combine(mainDirectory, "Settings.asset");
             if(File.Exists(settingsPath)) {
-                string settingsJSON = File.ReadAllText(settingsPath);
-                try {
-                    settings = JsonUtility.FromJson<Settings>(settingsJSON);
-                } catch(Exception e) {
-                    Debug.LogError(e);
-                }
+                settings = AssetDatabase.LoadAssetAtPath<Settings>(settingsPath);
             } else {
-                settings = new Settings();
-            }
+                CreateNewSettings();
+            };
         }
 
-        internal static void SaveSettings() {
-            Debug.Assert(settings != null);
-            Debug.Assert(string.IsNullOrEmpty(settingsPath) == false);
-
-            try {
-                File.WriteAllText(settingsPath, EditorJsonUtility.ToJson(settings, true));
-            } catch(Exception e) {
-                Debug.LogError(e);
-            }
+        internal static void CreateNewSettings() {
+            settings = ScriptableObject.CreateInstance<Settings>();
+            AssetDatabase.CreateAsset(settings, settingsPath);
         }
     }
 }

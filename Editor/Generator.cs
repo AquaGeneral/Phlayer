@@ -11,7 +11,6 @@ namespace JesseStiller.PhlayerTool {
     * TODO:
     * - Test with Generating by Layers update asset changed while the Settings is null due to the Phlayer directory being a different name
     * - Settings working in Unity 5.3?
-    * - Choosing a non-Assets located folder in Browse... dialog in choosing output path
     */
     public class Generator : AssetPostprocessor {
         private const string windowsLineEnding = "\r\n";
