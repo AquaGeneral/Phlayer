@@ -80,6 +80,7 @@ namespace JesseStiller.PhlayerTool {
             EditorGUILayout.LabelField("File", EditorStyles.boldLabel);
             Phlayer.settings.className = ValidatedTextField("Class Name", Phlayer.settings.className, true, "Layers");
             Phlayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", Phlayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
+
             EditorGUILayout.BeginHorizontal();
             Phlayer.settings.outputDirectory = DirectoryPathField("Output Directory", Phlayer.settings.outputDirectory);
             if(GUILayout.Button("Browse…", GUILayout.Width(78f), GUILayout.Height(22f))) {
@@ -215,9 +216,7 @@ namespace JesseStiller.PhlayerTool {
                 }
             }
 
-            text = DoTextField(controlId, controlRect, text, Styles.wordWrappedTextField, null, false, false, false, false);
-
-            return text;
+            return DoTextField(controlId, controlRect, text, Styles.wordWrappedTextField, null, false, false, false, false);
         }
 
         private static string DoTextField(int controlId, Rect rect, string text, GUIStyle style, string allowedLetters, bool changed, bool reset, bool multiline, bool passwordField) {

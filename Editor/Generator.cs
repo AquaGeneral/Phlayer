@@ -9,8 +9,9 @@ using UnityEngine;
 namespace JesseStiller.PhlayerTool {
     /**
     * TODO:
+    * - ScrollView for older versions of Unity whose Preferences window can't be expanded.
     * - Test with Generating by Layers update asset changed while the Settings is null due to the Phlayer directory being a different name
-    * - Settings working in Unity 5.3?
+    * - Replaces \ with / in all path usages
     */
     public class Generator : AssetPostprocessor {
         private const string windowsLineEnding = "\r\n";
@@ -33,11 +34,24 @@ namespace JesseStiller.PhlayerTool {
         internal static void GenerateAndSave() {
             Phlayer.InitializeSettings();
 
+            if(Path.IsPathRooted(Phlayer.settings.outputDirectory)) {
+                EditorUtility.DisplayDialog("Phlayer", "The output directory must be relative to this project's Assets directory.", "Cancel");
+                return;
+            }
+
             Generate(preview: false);
 
             string localFilePath = GetLocalPath();
             string absoluteFilePath = GetAbsolutePathFromLocalPath(localFilePath);
             string absoluteDirectory = Path.GetDirectoryName(absoluteFilePath);
+
+            try {
+                FileInfo fi = new FileInfo(absoluteFilePath);
+            } catch(Exception e) {
+                EditorUtility.DisplayDialog("Phlayer", string.Format("The output filepath is invalid for the following reason: {0}", e.ToString()), "Cancel");
+                return;
+            }
+
             if(Directory.Exists(absoluteDirectory) == false) {
                 Directory.CreateDirectory(absoluteDirectory);
             }
@@ -66,9 +80,8 @@ namespace JesseStiller.PhlayerTool {
 
         internal static string GetLocalPath() {
             string className = string.IsNullOrEmpty(Phlayer.settings.className) ? "Layers" : Phlayer.settings.className;
-            string outputDirectory = Path.Combine("Assets" , Phlayer.settings.outputDirectory);
             string extension = Phlayer.settings.appendDotGInFileName ? ".g.cs" : ".cs";
-            return Path.Combine(outputDirectory, className + extension);
+            return Path.Combine(Phlayer.settings.outputDirectory, className + extension);
         }
 
         private static void Generate(bool preview) {
