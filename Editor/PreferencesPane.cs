@@ -41,7 +41,7 @@ namespace JesseStiller.PhlayerTool {
         }
 
         private static class Contents {
-            internal static readonly GUIContent[] fileNameExtensions = { new GUIContent(".cs"), new GUIContent(".g.cs") };
+            internal static readonly GUIContent[] fileNameExtensions = { new GUIContent(".g.cs"), new GUIContent(".cs") };
             internal static readonly GUIContent[] curlyBracketPreference = { new GUIContent("New line"), new GUIContent("Same line") };
             internal static readonly GUIContent[] lineEndings = { new GUIContent("Windows-style"), new GUIContent("Unix-style") };
             internal static readonly GUIContent[] escapeIdentifierOptions = { new GUIContent("At symbol (@)"), new GUIContent("Underscore (_)") };
@@ -79,7 +79,7 @@ namespace JesseStiller.PhlayerTool {
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.LabelField("File", EditorStyles.boldLabel);
             Phlayer.settings.className = ValidatedTextField("Class Name", Phlayer.settings.className, true, "Layers");
-            Phlayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", Phlayer.settings.appendDotGInFileName ? 1 : 0, Contents.fileNameExtensions) == 1;
+            Phlayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", Phlayer.settings.appendDotGInFileName ? 0 : 1, Contents.fileNameExtensions) == 0;
 
             EditorGUILayout.BeginHorizontal();
             Phlayer.settings.outputDirectory = DirectoryPathField("Output Directory", Phlayer.settings.outputDirectory);

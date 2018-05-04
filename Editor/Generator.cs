@@ -35,7 +35,7 @@ namespace JesseStiller.PhlayerTool {
             Phlayer.InitializeSettings();
 
             if(Path.IsPathRooted(Phlayer.settings.outputDirectory)) {
-                EditorUtility.DisplayDialog("Phlayer", "The output directory must be relative to this project's Assets directory.", "Cancel");
+                EditorUtility.DisplayDialog("Generate Script", "The output directory must be relative to the current Unity project's Assets directory.", "Close");
                 return;
             }
 
@@ -48,7 +48,7 @@ namespace JesseStiller.PhlayerTool {
             try {
                 FileInfo fi = new FileInfo(absoluteFilePath);
             } catch(Exception e) {
-                EditorUtility.DisplayDialog("Phlayer", string.Format("The output filepath is invalid for the following reason: {0}", e.ToString()), "Cancel");
+                EditorUtility.DisplayDialog("Generate Script", string.Format("The output filepath is invalid for the following reason: {0}", e.ToString()), "Close");
                 return;
             }
 
@@ -57,7 +57,7 @@ namespace JesseStiller.PhlayerTool {
                     Directory.CreateDirectory(absoluteDirectory);
                 }
             } catch(Exception e) {
-                EditorUtility.DisplayDialog("Phlayer", string.Format("The output filepath is invalid for the following reason: {0}", e.Message), "Cancel");
+                EditorUtility.DisplayDialog("Generate Script", string.Format("The output filepath is invalid for the following reason: {0}", e.Message), "Close");
                 return;
             }
 
