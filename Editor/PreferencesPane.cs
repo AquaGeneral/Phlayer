@@ -68,15 +68,14 @@ namespace JesseStiller.PhlayerTool {
                     return;
             }
 
-            // TODO: Find which version of Unity makes this not necessary
+            EditorGUIUtility.labelWidth = 130f;
+
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
             if(string.IsNullOrEmpty(generatorPreviewText)) {
                 generatorPreviewText = Generator.GetPreview();
             }
-
-            EditorGUIUtility.labelWidth = 130f;
-
+            
             /**
             * File
             */
@@ -108,7 +107,7 @@ namespace JesseStiller.PhlayerTool {
             Phlayer.settings.classNamespace = ValidatedTextField("Class Namespace", Phlayer.settings.classNamespace, true);
             Phlayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)Phlayer.settings.casing, Contents.casing);
             Phlayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.Popup(new GUIContent("Indentation Style"), (int)Phlayer.settings.indentationStyle, Contents.indentationStyles);
-            Phlayer.settings.lineEndings = (LineEndings)RadioButtonsControl("Line Endings", (int)Phlayer.settings.lineEndings, Contents.lineEndings);
+            Phlayer.settings.windowsStyleLineEndings = RadioButtonsControl("Line Endings", Phlayer.settings.windowsStyleLineEndings ? 0 : 1, Contents.lineEndings) == 0;
             Phlayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", Phlayer.settings.curlyBracketOnNewLine ? 0 : 1, Contents.curlyBracketPreference) == 0;
             Phlayer.settings.escapeIdentifiersWithAtSymbol = RadioButtonsControl("Escape Character", Phlayer.settings.escapeIdentifiersWithAtSymbol ? 0 : 1, Contents.escapeIdentifierOptions) == 0;
             Phlayer.settings.skipDefaultLayers = EditorGUILayout.Toggle("Skip Default Layers", Phlayer.settings.skipDefaultLayers);

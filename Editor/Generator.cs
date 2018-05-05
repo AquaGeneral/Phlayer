@@ -7,10 +7,6 @@ using UnityEditor;
 using UnityEngine;
 
 namespace JesseStiller.PhlayerTool {
-    /**
-    * TODO:
-    * - ScrollView for older versions of Unity whose Preferences window can't be expanded.
-    */
     public class Generator : AssetPostprocessor {
         private const string windowsLineEnding = "\r\n";
         private const string unixLineEnding = "\n";
@@ -49,19 +45,15 @@ namespace JesseStiller.PhlayerTool {
             string absoluteFilePath = GetAbsolutePathFromLocalPath(GetLocalPath());
             string absoluteDirectory = Path.GetDirectoryName(absoluteFilePath);
 
+            // Validation of path
             try {
-                FileInfo fi = new FileInfo(absoluteFilePath);
-            } catch(Exception e) {
-                EditorUtility.DisplayDialog("Generate Script", string.Format("The output filepath is invalid for the following reason: {0}", e.ToString()), "Close");
-                return;
-            }
+                new FileInfo(absoluteFilePath);
 
-            try {
                 if(Directory.Exists(absoluteDirectory) == false) {
                     Directory.CreateDirectory(absoluteDirectory);
                 }
             } catch(Exception e) {
-                EditorUtility.DisplayDialog("Generate Script", string.Format("The output filepath is invalid for the following reason: {0}", e.Message), "Close");
+                EditorUtility.DisplayDialog("Generate Script", string.Format("The output filepath is invalid for the following reason: {0}", e.ToString()), "Close");
                 return;
             }
 
@@ -237,7 +229,7 @@ namespace JesseStiller.PhlayerTool {
 
         private static void AppendLine(string s) {
             Append(s);
-            if(Phlayer.settings.lineEndings == LineEndings.Windows) {
+            if(Phlayer.settings.windowsStyleLineEndings) {
                 sb.Append(windowsLineEnding);
             } else {
                 sb.Append(unixLineEnding);

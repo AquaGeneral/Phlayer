@@ -19,7 +19,7 @@ namespace JesseStiller.PhlayerTool {
         public bool appendDotGInFileName = true;
         public bool escapeIdentifiersWithAtSymbol = true;
         public bool curlyBracketOnNewLine = true;
-        public LineEndings lineEndings = LineEndings.Windows;
+        public bool windowsStyleLineEndings = true;
         public IndentationStyle indentationStyle = IndentationStyle.FourSpaces;
 
         // Do the rest via reflection so we don't have to update this code every time we update the settings.
