@@ -28,9 +28,9 @@ namespace JesseStiller.PhlayerTool {
         internal static void GenerateAndSave() {
             if(Phlayer.InitializeSettings() == false) {
                 if(Phlayer.errorState == SettingsError.NoDirectory) {
-                    Debug.LogError("Phlayer couldn't generate the layers class automatically because it couldn't find its main directory. Ensure Phlayer's main directory hasn't been renamed.");
+                    Debug.LogError("Phlayer could not generate the layers class automatically because it could not find its main directory. Ensure Phlayer's main directory hasn't been renamed.");
                 } else if(Phlayer.errorState == SettingsError.NoValidFile) {
-                    Debug.LogError("Phlayer couldn't generate the layers class automatically because it couldn't find any scripts in its main directory. Reimport the Phlayer package.");
+                    Debug.LogError("Phlayer could not generate the layers class automatically because it could not find any scripts in its main directory. Reimport the Phlayer package.");
                 }
                 return;
             }

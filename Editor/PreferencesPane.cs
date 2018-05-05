@@ -139,7 +139,7 @@ namespace JesseStiller.PhlayerTool {
 
                 GUI.enabled = !Phlayer.settings.Equals(defaultSettings);
                 if(GUILayout.Button("Restore Defaults", GUILayout.Width(125f), GUILayout.Height(22f)) &&
-                    EditorUtility.DisplayDialog("Phlayer", "Are you sure you want to restore settings to their defaults?", "Restore Default Settings", "Cancel")) {
+                    EditorUtility.DisplayDialog("Restore Defaults", "Are you sure you want to restore settings to their defaults?", "Restore Defaults", "Cancel")) {
                     Phlayer.CreateNewSettings();
                     generatorPreviewText = Generator.GetPreview();
                     GUIUtility.keyboardControl = 0;
