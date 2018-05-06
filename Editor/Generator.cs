@@ -35,7 +35,7 @@ namespace JesseStiller.PhlayerTool {
                 return;
             }
 
-            if(Path.IsPathRooted(Phlayer.settings.outputDirectory)) {
+            if(Path.IsPathRooted(Phlayer.settings.localOutputDirectory)) {
                 EditorUtility.DisplayDialog("Generate Script", "The output directory must be relative to the current Unity project's Assets directory.", "Close");
                 return;
             }
@@ -82,7 +82,7 @@ namespace JesseStiller.PhlayerTool {
         internal static string GetLocalPath() {
             string className = string.IsNullOrEmpty(Phlayer.settings.className) ? "Layers" : Phlayer.settings.className;
             string extension = Phlayer.settings.appendDotGInFileName ? ".g.cs" : ".cs";
-            return Path.Combine(Phlayer.settings.outputDirectory, className + extension).Replace('\\', '/');
+            return Path.Combine(Phlayer.settings.localOutputDirectory, className + extension).Replace('\\', '/');
         }
 
         private static void Generate(bool preview) {

@@ -13,7 +13,7 @@ namespace JesseStiller.PhlayerTool {
         */
         public Casing casing = Casing.Pascal;
         public bool skipDefaultLayers = false;
-        public string outputDirectory = "";
+        public string localOutputDirectory = "";
         public string classNamespace = "";
         public string className = "Layers";
         public bool appendDotGInFileName = true;
@@ -42,7 +42,5 @@ namespace JesseStiller.PhlayerTool {
             }
             return settings;
         }
-
-        
     }
 }

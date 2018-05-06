@@ -46,9 +46,12 @@ namespace JesseStiller.PhlayerTool {
             internal static readonly GUIContent[] curlyBracketPreference = { new GUIContent("New line"), new GUIContent("Same line") };
             internal static readonly GUIContent[] lineEndings = { new GUIContent("Windows-style"), new GUIContent("Unix-style") };
             internal static readonly GUIContent[] escapeIdentifierOptions = { new GUIContent("At symbol (@)"), new GUIContent("Underscore (_)") };
-            internal static readonly string[] casing = {
-                "Leave as-is", "Camel", "Pascal", "Caps Lock", "Caps Lock (underscored spaces)"
+            internal static readonly GUIContent localOutputDirectory = new GUIContent("Local Output Directory", 
+                "The directory that the generated class will be saved to, which is relative to the current project's \"Assets\" directory.");
+            internal static readonly GUIContent[] casing = {
+                new GUIContent("Leave as-is"), new GUIContent("Camel"), new GUIContent("Pascal"), new GUIContent("Caps Lock"), new GUIContent("Caps Lock (underscored spaces)")
             };
+            internal static readonly GUIContent fieldCasing = new GUIContent("Field Casing");
             internal static readonly GUIContent[] indentationStyles = {
                 new GUIContent("1-space"), new GUIContent("2-space"), new GUIContent("3-space"), new GUIContent("4-space"), new GUIContent("Tabs")
             };
@@ -68,7 +71,7 @@ namespace JesseStiller.PhlayerTool {
                     return;
             }
 
-            EditorGUIUtility.labelWidth = 130f;
+            EditorGUIUtility.labelWidth = 142f;
 
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
@@ -85,27 +88,27 @@ namespace JesseStiller.PhlayerTool {
             Phlayer.settings.appendDotGInFileName = RadioButtonsControl("Filename Extension", Phlayer.settings.appendDotGInFileName ? 0 : 1, Contents.fileNameExtensions) == 0;
 
             EditorGUILayout.BeginHorizontal();
-            Phlayer.settings.outputDirectory = DirectoryPathField("Output Directory", Phlayer.settings.outputDirectory);
+            Phlayer.settings.localOutputDirectory = DirectoryPathField(Contents.localOutputDirectory, Phlayer.settings.localOutputDirectory);
             if(GUILayout.Button("Browse…", GUILayout.Width(78f), GUILayout.Height(22f))) {
                 string chosenPath = EditorUtility.OpenFolderPanel("Browse", GetOutputDirectory(), string.Empty);
                 if(string.IsNullOrEmpty(chosenPath) == false) {
                     if(chosenPath.Contains(Application.dataPath) == false) {
                         EditorUtility.DisplayDialog("Browse", "The output directory must be contained within the current Unity project.", "Close");
                     } else {
-                        Phlayer.settings.outputDirectory = Utilities.GetLocalPathFromAbsolutePath(chosenPath);
+                        Phlayer.settings.localOutputDirectory = Utilities.GetLocalPathFromAbsolutePath(chosenPath);
                         GUIUtility.keyboardControl = 0;
                     }
                 }
             }
             EditorGUILayout.EndHorizontal();
-            EditorGUILayout.LabelField("Output Filepath", Generator.GetLocalPath());
+            EditorGUILayout.LabelField("Local Output Filepath", Generator.GetLocalPath());
 
             /**
             * Generated Code
             */
             EditorGUILayout.LabelField("Generated Code", EditorStyles.boldLabel);
             Phlayer.settings.classNamespace = ValidatedTextField("Class Namespace", Phlayer.settings.classNamespace, true);
-            Phlayer.settings.casing = (Casing)EditorGUILayout.Popup("Field Casing", (int)Phlayer.settings.casing, Contents.casing);
+            Phlayer.settings.casing = (Casing)EditorGUILayout.Popup(Contents.fieldCasing, (int)Phlayer.settings.casing, Contents.casing);
             Phlayer.settings.indentationStyle = (IndentationStyle)EditorGUILayout.Popup(new GUIContent("Indentation Style"), (int)Phlayer.settings.indentationStyle, Contents.indentationStyles);
             Phlayer.settings.windowsStyleLineEndings = RadioButtonsControl("Line Endings", Phlayer.settings.windowsStyleLineEndings ? 0 : 1, Contents.lineEndings) == 0;
             Phlayer.settings.curlyBracketOnNewLine = RadioButtonsControl("Curly Brackets", Phlayer.settings.curlyBracketOnNewLine ? 0 : 1, Contents.curlyBracketPreference) == 0;
@@ -150,7 +153,7 @@ namespace JesseStiller.PhlayerTool {
             // Expand the window height so that is shows all of our GUI elements
             if(expandWindowHeight && Event.current.type == EventType.Repaint) {
                 Rect lastRect = GUILayoutUtility.GetLastRect();
-                EditorWindow editorWindow = EditorWindow.GetWindow(unityPreferencesWindowType);
+                EditorWindow editorWindow = EditorWindow.GetWindow(unityPreferencesWindowType); 
                 editorWindow.position = new Rect(
                     editorWindow.position.x, editorWindow.position.y, editorWindow.position.width, Mathf.Max(editorWindow.position.height, lastRect.y + lastRect.height + 55f)
                 );
@@ -199,10 +202,10 @@ namespace JesseStiller.PhlayerTool {
         }
 
         private static readonly int directoryPathFieldId = "PhlayerDirectoryPathField".GetHashCode();
-        private static string DirectoryPathField(string label, string text) {
+        private static string DirectoryPathField(GUIContent content, string text) {
             Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(29f));
             int controlId = GUIUtility.GetControlID(directoryPathFieldId, FocusType.Keyboard, r);
-            Rect controlRect = EditorGUI.PrefixLabel(r, controlId, new GUIContent(label));
+            Rect controlRect = EditorGUI.PrefixLabel(r, controlId, content);
             Event current = Event.current;
             if(GUIUtility.keyboardControl == controlId) {
                 switch(current.GetTypeForControl(controlId)) {
@@ -231,10 +234,10 @@ namespace JesseStiller.PhlayerTool {
         }
 
         private static string GetOutputDirectory() {
-            if(string.IsNullOrEmpty(Phlayer.settings.outputDirectory)) {
+            if(string.IsNullOrEmpty(Phlayer.settings.localOutputDirectory)) {
                 return Phlayer.mainDirectory;
             } else {
-                return Phlayer.settings.outputDirectory;
+                return Phlayer.settings.localOutputDirectory;
             }
         }
     }
