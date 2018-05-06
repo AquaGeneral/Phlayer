@@ -1,5 +1,5 @@
 ﻿namespace JesseStiller.PhlayerTool {
-    public enum Casing {
+    public enum Casing : byte {
         LeaveAsIs,
         Camel,
         Pascal,
