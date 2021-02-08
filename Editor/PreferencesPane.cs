@@ -1,11 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
 namespace JesseStiller.PhlayerTool {
     public class PreferencesPane {
-        private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType("UnityEditor.PreferencesWindow");
+        private static readonly Type unityPreferencesWindowType = typeof(Editor).Assembly.GetType(
+            #if UNITY_2018_3_OR_NEWER
+            "UnityEditor.SettingsWindow"
+            #else
+            "UnityEditor.PreferencesWindow"
+            #endif
+            );
         private static readonly MethodInfo doTextFieldMethod = typeof(EditorGUI).GetMethod("DoTextField", BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly TextEditor recycledEditor = (TextEditor)typeof(EditorGUI).GetField("s_RecycledEditor", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
         private static readonly Settings defaultSettings = ScriptableObject.CreateInstance<Settings>();
@@ -57,7 +64,24 @@ namespace JesseStiller.PhlayerTool {
             };
         }
 
+        #if UNITY_2018_3_OR_NEWER
+        [SettingsProvider]
+        private static SettingsProvider SettingsProvider() {
+            var provider = new SettingsProvider("Preferences/Phlayer", SettingsScope.User) {
+                label = "Phlayer",
+                guiHandler = (searchContext) => { 
+                    DrawPreferences();
+                },
+                keywords = new HashSet<string>(new[] { "Physics", "Layer" })
+            };
+
+            return provider;
+        }
+        #endif
+
+        #if !UNITY_2018_3_OR_NEWER
         [PreferenceItem("Phlayer")]
+        #endif
         private static void DrawPreferences() {
             Styles.Initialize();
             Phlayer.InitializeSettings();
